@@ -1,0 +1,53 @@
+name: Deploy to GitHub Pages
+
+# リポジトリのルートにあるのはビルド前のソースなので、そのまま配信しても動かない。
+# ここでビルドして、その成果物 (dist) を Pages に渡す。
+on:
+  push:
+    branches:
+      - claude/repeating-app-plan-f43ywy
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 配信は 1 つなので、走行中のデプロイがあれば新しいものに譲る。
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      - run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
