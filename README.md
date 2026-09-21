@@ -64,6 +64,18 @@ OS のフォント（`-apple-system` 系）、ピル型のアクションボタ�
 右上のトグルで手動切り替えもでき、その場合は選択が `localStorage` に保存されて追従をやめる。
 ダーク側も純黒は使わず `#1d1d1f` を基調にしている。
 
+## 公開
+
+GitHub Pages への配信は `.github/workflows/pages.yml` が行う。ブランチに push すると
+テストとビルドを通し、その成果物 (`dist`) を Pages に渡す。
+
+**Pages の Source は「GitHub Actions」にする。**「Deploy from a branch」にすると
+リポジトリのルート（ビルド前のソース）がそのまま配信され、`index.html` が
+`/src/main.tsx` を読もうとして動かない。
+
+`vite.config.ts` の `base` は `'./'` なので、`https://<user>.github.io/<repo>/` のような
+サブパス配信でもアセットの参照は崩れない。
+
 ## 開発
 
 ```bash
