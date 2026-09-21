@@ -41,6 +41,16 @@ npm run dev
 - **字幕** 隠す / ヒント（各単語の 1 文字目だけ）/ 表示
 - **自動で次の文へ** オフにすると自分のペースで進められる
 
+## 見た目
+
+Apple のサイトや iOS の UI に寄せたデザイン言語で組んである。
+OS のフォント（`-apple-system` 系）、ピル型のアクションボタン、iOS 風のセグメンテッドコントロールと
+スイッチ、角丸 18px のカードと控えめな影。Apple のロゴやフォントファイルなどの素材は含まない。
+
+配色はライトが既定（背景 `#f5f5f7`）。OS がダークならダークで開き、以後も OS の切り替えに追従する。
+右上のトグルで手動切り替えもでき、その場合は選択が `localStorage` に保存されて追従をやめる。
+ダーク側も純黒は使わず `#1d1d1f` を基調にしている。
+
 ## 開発
 
 ```bash
@@ -56,10 +66,12 @@ src/
     segment.ts           重複除去と文への結合（分割精度の肝）
     useYouTubePlayer.ts  IFrame Player API での区間再生
     usePractice.ts       聞く / 真似る の状態機械
+    useTheme.ts          配色の切り替えと OS 設定への追従
   components/
     ImportPanel.tsx      取り込み画面
     PracticeView.tsx     練習画面
     SentenceList.tsx     文の一覧
+    ThemeToggle.tsx      配色トグル
 ```
 
 字幕は自分で用意したものを取り込む形にしている。理由と自動取得の選択肢は
