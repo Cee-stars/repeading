@@ -16,6 +16,18 @@ export interface Material {
 
 const TITLE_MAX = 40;
 
+/**
+ * 教材の id を作る。`crypto.randomUUID` は Safari 15.4 未満と、
+ * 安全でない配信元（http）では使えないので、その場合は乱数で代用する。
+ * 用途はローカルの一意な鍵だけなので、暗号論的な強度は要らない。
+ */
+function newId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 /** 教材名の既定値。最初の文から作り、無ければ動画 ID で代用する。 */
 export function deriveTitle(sentences: Sentence[], videoId: string): string {
   const first = sentences[0]?.text.trim();
@@ -30,7 +42,7 @@ export function createMaterial(
   now = Date.now(),
 ): Material {
   return {
-    id: crypto.randomUUID(),
+    id: newId(),
     videoId,
     title: title.trim() || deriveTitle(sentences, videoId),
     sentences,

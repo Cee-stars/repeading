@@ -4,9 +4,91 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Repeading — 一文ずつリピーティング</title>
+    <style>
+      /* アプリの CSS が読めない場合にも出せるよう、この画面だけは素の style で持つ。 */
+      #boot-error {
+        max-width: 640px;
+        margin: 40px auto;
+        padding: 0 20px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+        line-height: 1.6;
+        color: #1d1d1f;
+      }
+      #boot-error h1 {
+        font-size: 22px;
+      }
+      #boot-error code {
+        display: block;
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        background: #f5f5f7;
+        font-size: 13px;
+        word-break: break-word;
+        white-space: pre-wrap;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+
+    <div id="boot-error" hidden>
+      <h1>読み込めませんでした</h1>
+      <p>
+        お使いのブラウザが対応していない可能性があります。
+        下の内容をそのまま伝えてもらえれば原因を特定できます。
+      </p>
+      <code id="boot-error-detail"></code>
+    </div>
+
+    <script>
+      // モジュールの構文エラーは白画面になり、何が起きたのか分からなくなる。
+      // 起動できなかったことだけは必ず画面に出す。
+      (function () {
+        var box = document.getElementById('boot-error');
+        var detail = document.getElementById('boot-error-detail');
+
+        function show(message) {
+          if (!box.hidden) return;
+          box.hidden = false;
+          detail.textContent = message + '\n\n' + navigator.userAgent;
+        }
+
+        // 第 3 引数の true が要る。スクリプトや CSS の読み込み失敗は
+        // window までバブリングせず、キャプチャフェーズでしか拾えない。
+        window.addEventListener(
+          'error',
+          function (event) {
+            var target = event.target;
+            if (target && target !== window && target.tagName) {
+              show('読み込み失敗: ' + (target.src || target.href || target.tagName));
+              return;
+            }
+            show(event.message || String(event.error || 'unknown error'));
+          },
+          true,
+        );
+
+        window.addEventListener('unhandledrejection', function (event) {
+          var reason = event.reason;
+          show('unhandled rejection: ' + ((reason && reason.message) || String(reason)));
+        });
+
+        // 例外が出ないまま描画されないこともあるので、一定時間で見切る。
+        window.setTimeout(function () {
+          if (!document.getElementById('root').firstChild) {
+            show('画面が描画されませんでした（スクリプトが実行されていない可能性があります）');
+          }
+        }, 8000);
+      })();
+    </script>
+
+    <noscript>
+      <p style="font-family: sans-serif; padding: 20px">
+        このアプリは JavaScript が必要です。有効にして開き直してください。
+      </p>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

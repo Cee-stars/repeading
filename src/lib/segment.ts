@@ -135,13 +135,24 @@ export function segmentCues(cues: Cue[], options: SegmentOptions = DEFAULT_SEGME
   return sentences;
 }
 
-/** タイムスタンプの無いベタテキストを、句読点だけで文に割る（再生区間は持たない）。 */
+/**
+ * タイムスタンプの無いベタテキストを、句読点だけで文に割る（再生区間は持たない）。
+ *
+ * 後読み `(?<=…)` は使わない。Safari 16.4 未満では構文エラーになり、
+ * バンドル全体が読めずに真っ白な画面になるため。
+ * 代わりに区切り記号を捕捉し、直前の文の末尾に付け直して同じ結果を得る。
+ */
 export function segmentPlainText(text: string): Sentence[] {
-  return text
-    .split(/(?<=[.!?。！？])\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((s, i) => ({ id: i, start: 0, end: 0, text: s }));
+  const parts = text.split(/([.!?。！？]+)\s+/);
+  const sentences: Sentence[] = [];
+
+  // split の結果は [本文, 区切り, 本文, 区切り, …, 末尾] と交互に並ぶ。
+  for (let i = 0; i < parts.length; i += 2) {
+    const body = `${parts[i] ?? ''}${parts[i + 1] ?? ''}`.trim();
+    if (body) sentences.push({ id: sentences.length, start: 0, end: 0, text: body });
+  }
+
+  return sentences;
 }
 
 /** 解析結果から練習文の一覧を作る。 */

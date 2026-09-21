@@ -129,4 +129,30 @@ describe('segmentPlainText', () => {
       'is the wind cold?',
     ]);
   });
+
+  it('splits Japanese punctuation too', () => {
+    expect(segmentPlainText('空は晴れている。 風が冷たい。').map((s) => s.text)).toEqual([
+      '空は晴れている。',
+      '風が冷たい。',
+    ]);
+  });
+
+  it('only splits where whitespace follows, so decimals stay whole', () => {
+    expect(segmentPlainText('it weighs 3.5 kg. take a coat.').map((s) => s.text)).toEqual([
+      'it weighs 3.5 kg.',
+      'take a coat.',
+    ]);
+  });
+
+  it('keeps a run of punctuation with its sentence', () => {
+    expect(segmentPlainText('really?! yes.').map((s) => s.text)).toEqual(['really?!', 'yes.']);
+  });
+
+  it('numbers the sentences from zero', () => {
+    expect(segmentPlainText('one. two. three.').map((s) => s.id)).toEqual([0, 1, 2]);
+  });
+
+  it('returns nothing for empty input', () => {
+    expect(segmentPlainText('   ')).toEqual([]);
+  });
 });
