@@ -21,6 +21,7 @@
   --warn: #b25000;
   --warn-soft: #fff6ec;
   --green: #34c759;
+  --danger: #d70015;
   --video-bg: #e8e8ed;
   --shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 12px 28px rgba(0, 0, 0, 0.05);
   --shadow-segment: 0 3px 8px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.04);
@@ -44,6 +45,7 @@
     --warn: #ff9f0a;
     --warn-soft: #38290f;
     --green: #30d158;
+  --danger: #ff453a;
     --video-bg: #2c2c2e;
     --shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     --shadow-segment: 0 3px 8px rgba(0, 0, 0, 0.35);
@@ -67,6 +69,7 @@
   --warn: #ff9f0a;
   --warn-soft: #38290f;
   --green: #30d158;
+  --danger: #ff453a;
   --video-bg: #2c2c2e;
   --shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   --shadow-segment: 0 3px 8px rgba(0, 0, 0, 0.35);
@@ -415,7 +418,6 @@ button.primary:not(.wide) {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -642,4 +644,162 @@ kbd {
   .settings {
     gap: 14px 18px;
   }
+}
+
+/* --- 保存した教材 --- */
+
+.library {
+  margin-bottom: 44px;
+}
+
+.library h2 {
+  margin: 0 0 12px;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+}
+
+.library-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.library-list li {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.library-list li + li {
+  border-top: 1px solid var(--border);
+}
+
+.library-open {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  padding: 14px 18px 16px;
+  min-width: 0;
+}
+
+.library-open:hover {
+  background: var(--fill);
+  border-color: transparent;
+}
+
+.library-title {
+  font-size: 16px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* 進捗は行の下端に細い帯で出す。 */
+.library-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--fill);
+}
+
+.library-progress::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: calc(var(--value) * 100%);
+  background: var(--accent);
+}
+
+.library-delete {
+  align-self: center;
+  flex-shrink: 0;
+  margin-right: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.library-delete:hover:not(:disabled) {
+  color: var(--danger);
+  background: var(--fill);
+}
+
+.title-field {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.title-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* --- 苦手マークと復習モード --- */
+
+.caption-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.mark {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  font-size: 13px;
+  border-radius: var(--pill);
+  background: var(--fill);
+  color: var(--muted);
+}
+
+.mark.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.setting-count {
+  margin-left: 2px;
+  padding: 0 8px;
+  font-size: 12px;
+  border-radius: var(--pill);
+  background: var(--fill);
+  color: var(--muted);
+}
+
+.setting.checkbox.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sentence-list .text {
+  flex: 1;
+  min-width: 0;
+}
+
+.hard-mark {
+  flex-shrink: 0;
+  color: var(--accent);
 }

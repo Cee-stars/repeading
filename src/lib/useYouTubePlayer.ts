@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /** IFrame Player API のうち、このアプリが使う部分だけ型を置く。 */
 interface YTPlayer {
@@ -182,5 +182,9 @@ export function useYouTubePlayer(videoId: string | null): YouTubePlayerApi {
     };
   }, [videoId, clearTimer]);
 
-  return { containerRef, ready, playing, playRange, stop, setPlaybackRate };
+  // 依存配列に置かれるので、中身が変わらない限り同じオブジェクトを返す。
+  return useMemo(
+    () => ({ containerRef, ready, playing, playRange, stop, setPlaybackRate }),
+    [ready, playing, playRange, stop, setPlaybackRate],
+  );
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { resumeIndex } from './material';
 import type { Sentence } from './types';
 import type { YouTubePlayerApi } from './useYouTubePlayer';
 
@@ -43,6 +44,8 @@ export function usePractice(
   sentences: Sentence[],
   player: YouTubePlayerApi,
   settings: PracticeSettings,
+  /** 再開したい文の id。教材を開き直したときに続きから始める。 */
+  resumeSentenceId: number | null = null,
 ): PracticeApi {
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>('idle');
@@ -55,9 +58,12 @@ export function usePractice(
   const sentencesRef = useRef(sentences);
   const pauseTimerRef = useRef<number | null>(null);
   const playAtRef = useRef<(index: number, repeatsDone: number) => void>(() => {});
+  const resumeRef = useRef(resumeSentenceId);
+  const stopRef = useRef<() => void>(() => {});
 
   settingsRef.current = settings;
   sentencesRef.current = sentences;
+  resumeRef.current = resumeSentenceId;
 
   const clearPause = useCallback(() => {
     if (pauseTimerRef.current !== null) {
@@ -71,6 +77,8 @@ export function usePractice(
     player.stop();
     setPhase('idle');
   }, [clearPause, player]);
+
+  stopRef.current = stop;
 
   const handleSegmentEnd = useCallback(() => {
     const { repeatCount, autoAdvance, pauseRatio, playbackRate } = settingsRef.current;
@@ -151,15 +159,16 @@ export function usePractice(
     player.setPlaybackRate(settings.playbackRate);
   }, [player, settings.playbackRate]);
 
-  // 教材が差し替わったら先頭に戻す。
+  // 教材や練習範囲が差し替わったら、再開したい文の位置に戻して止める。
+  // その文が新しい並びに無ければ（復習モードで絞られた等）先頭から。
   useEffect(() => {
-    clearPause();
-    indexRef.current = 0;
+    stopRef.current();
+    const start = resumeIndex(sentences, resumeRef.current);
+    indexRef.current = start;
     repeatsRef.current = 0;
-    setIndex(0);
+    setIndex(start);
     setRepeatsDone(0);
-    setPhase('idle');
-  }, [sentences, clearPause]);
+  }, [sentences]);
 
   useEffect(() => clearPause, [clearPause]);
 

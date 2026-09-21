@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import { buildSentences } from '../lib/segment';
+import { createMaterial, deriveTitle } from '../lib/material';
 import { parseSubtitles } from '../lib/parseSubtitles';
 import { formatTimestamp } from '../lib/time';
 import { extractVideoId } from '../lib/youtubeUrl';
-import type { Sentence } from '../lib/types';
+import type { Material } from '../lib/material';
 
 const FORMAT_LABELS: Record<string, string> = {
   srt: 'SRT ファイル',
@@ -13,12 +14,15 @@ const FORMAT_LABELS: Record<string, string> = {
 };
 
 interface Props {
-  onStart: (videoId: string, sentences: Sentence[]) => void;
+  onStart: (material: Material) => void;
+  /** 見出しの直後に差し込む内容（保存した教材の一覧）。 */
+  children?: React.ReactNode;
 }
 
-export function ImportPanel({ onStart }: Props) {
+export function ImportPanel({ onStart, children }: Props) {
   const [url, setUrl] = useState('');
   const [raw, setRaw] = useState('');
+  const [title, setTitle] = useState('');
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +40,8 @@ export function ImportPanel({ onStart }: Props) {
         <h1>Repeading</h1>
         <p>YouTube の字幕を一文ずつ区切って、聞いて、真似る。</p>
       </header>
+
+      {children}
 
       <section className="field">
         <label htmlFor="url">1. 動画の URL</label>
@@ -125,6 +131,19 @@ export function ImportPanel({ onStart }: Props) {
             ))}
           </ol>
           {sentences.length > 5 && <p className="hint">…ほか {sentences.length - 5} 文</p>}
+
+          {parsed.timed && sentences.length > 0 && (
+            <div className="title-field">
+              <label htmlFor="title">教材名</label>
+              <input
+                id="title"
+                type="text"
+                value={title}
+                placeholder={deriveTitle(sentences, videoId ?? '')}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+          )}
         </section>
       )}
 
@@ -132,7 +151,7 @@ export function ImportPanel({ onStart }: Props) {
         type="button"
         className="primary"
         disabled={!canStart}
-        onClick={() => videoId && onStart(videoId, sentences)}
+        onClick={() => videoId && onStart(createMaterial(videoId, title, sentences))}
       >
         練習を始める
       </button>
