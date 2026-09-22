@@ -97,9 +97,13 @@ OS のフォント（`-apple-system` 系）、ピル型のアクションボタ�
 GitHub Pages への配信は `.github/workflows/pages.yml` が行う。ブランチに push すると
 テストとビルドを通し、その成果物 (`dist`) を Pages に渡す。
 
-**Pages の Source は「GitHub Actions」にする。**「Deploy from a branch」にすると
-リポジトリのルート（ビルド前のソース）がそのまま配信され、`index.html` が
-`/src/main.tsx` を読もうとして動かない。
+**Pages の Source は「GitHub Actions」にする**（Settings → Pages → Source）。
+「Deploy from a branch」のままだと、GitHub 純正の `pages build and deployment` が
+push のたびに走り、リポジトリのルート（ビルド前のソース）をそのまま配信する。
+このワークフローはこちらのデプロイより後に終わるので、ビルド成果物を上書きしてしまう。
+配信されるのはソースの `index.html` で、`/src/main.tsx` を読もうとして動かない。
+
+この状態で開くと、画面に原因と直し方が出るようにしてある（`index.html` の起動チェック）。
 
 `vite.config.ts` の `base` は `'./'` なので、`https://<user>.github.io/<repo>/` のような
 サブパス配信でもアセットの参照は崩れない。

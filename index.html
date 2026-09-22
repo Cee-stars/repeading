@@ -75,6 +75,23 @@
           return !!(root && root.firstChild);
         }
 
+        /*
+         * ビルド前のこの HTML がそのまま配信されていないか。
+         * ビルド後は Vite がエントリを ./assets/*.js に書き換えるので、
+         * /src/ のままなら成果物ではなくリポジトリの中身が配信されている。
+         * 該当すれば、ただの読み込み失敗ではなく原因を名指しで返す。
+         */
+        function unbuiltNotice(url) {
+          var local = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+          if (local || url.lastIndexOf(location.origin + '/src/', 0) !== 0) return '';
+          return (
+            'ビルド前のソースが配信されています。\n' +
+            'GitHub Pages の Source が「Deploy from a branch」のままだと、\n' +
+            'ビルド成果物ではなくリポジトリの中身がそのまま配信されます。\n' +
+            'Settings → Pages → Source を「GitHub Actions」に変えてください。'
+          );
+        }
+
         // 第 3 引数の true が要る。スクリプトや CSS の読み込み失敗は
         // window までバブリングせず、キャプチャフェーズでしか拾えない。
         window.addEventListener(
@@ -86,7 +103,7 @@
               var url = target.src || target.href || '';
               // YouTube など外部の読み込み失敗は起動の失敗ではないので黙っておく。
               if (url && url.lastIndexOf(location.origin, 0) !== 0) return;
-              show('読み込み失敗: ' + (url || target.tagName));
+              show(unbuiltNotice(url) || '読み込み失敗: ' + (url || target.tagName));
               return;
             }
             show(event.message || String(event.error || 'unknown error'));
@@ -98,6 +115,14 @@
           if (started()) return;
           var reason = event.reason;
           show('unhandled rejection: ' + ((reason && reason.message) || String(reason)));
+        });
+
+        // 読み込みエラーが出ないまま黙って失敗する場合もあるので、こちらでも見る。
+        document.addEventListener('DOMContentLoaded', function () {
+          var entry = document.querySelector('script[type="module"][src]');
+          if (!entry) return;
+          var notice = unbuiltNotice(new URL(entry.getAttribute('src'), location.href).href);
+          if (notice) show(notice);
         });
 
         // 例外が出ないまま描画されないこともあるので、一定時間で見切る。
