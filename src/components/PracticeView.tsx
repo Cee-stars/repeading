@@ -1,7 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { SentenceList } from './SentenceList';
+import {
+  mergeWithPrevious,
+  nudgeBoundary,
+  pruneHardIds,
+  splitPoints,
+  splitSentence,
+} from '../lib/edit';
 import { selectSentences, toggleHardId } from '../lib/material';
 import type { Material } from '../lib/material';
+import { formatPreciseTimestamp } from '../lib/time';
+import type { Sentence } from '../lib/types';
 import { usePractice } from '../lib/usePractice';
 import {
   PAUSE_RATIOS,
@@ -22,6 +31,9 @@ const REVEAL_LABELS: Record<Reveal, string> = {
 /** 進捗を書き込むまでの待ち時間。文を移るたびに保存しにいかないための間引き。 */
 const SAVE_DEBOUNCE_MS = 600;
 
+/** 区間の端を 1 回でずらす量（秒）。自動字幕のずれはおおむねこの単位で直せる。 */
+const NUDGE = 0.2;
+
 /** 各単語の 1 文字目だけ残す。思い出せないときの手がかり用。 */
 function toHint(text: string): string {
   return text.replace(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu, (word) =>
@@ -40,6 +52,7 @@ export function PracticeView({ material, onBack, onChange }: Props) {
   const [hardIds, setHardIds] = useState(material.hardIds);
   const [reviewOnly, setReviewOnly] = useState(false);
   const [resumeId, setResumeId] = useState(material.resumeSentenceId);
+  const [editing, setEditing] = useState(false);
 
   const sentences = useMemo(
     () => selectSentences(material.sentences, hardIds, reviewOnly),
@@ -80,9 +93,21 @@ export function PracticeView({ material, onBack, onChange }: Props) {
   const latest = useRef({ material, hardIds, resumeId, onChange });
   latest.current = { material, hardIds, resumeId, onChange };
 
-  const save = () => {
+  const save = (patch: Partial<Material> = {}) => {
     const { material: base, hardIds: ids, resumeId: id, onChange: commit } = latest.current;
-    commit({ ...base, hardIds: ids, resumeSentenceId: id, updatedAt: Date.now() });
+    commit({ ...base, hardIds: ids, resumeSentenceId: id, ...patch, updatedAt: Date.now() });
+  };
+
+  /** 文の並びを編集する。消えた文に付いていた印は落とす。 */
+  const applyEdit = (next: Sentence[]) => {
+    const kept = pruneHardIds(latest.current.hardIds, next);
+    setHardIds(kept);
+    save({ sentences: next, hardIds: kept });
+  };
+
+  const editCurrent = (next: (all: Sentence[], id: number) => Sentence[]) => {
+    if (currentId === undefined) return;
+    applyEdit(next(material.sentences, currentId));
   };
 
   const mounted = useRef(false);
@@ -134,16 +159,30 @@ export function PracticeView({ material, onBack, onChange }: Props) {
         <button type="button" className="ghost" onClick={onBack}>
           ← 教材を変える
         </button>
-        <span className="counter">
-          {sentences.length ? practice.index + 1 : 0} / {sentences.length}
-          {settings.repeatCount > 1 && (
-            <span className="repeat-dots">
-              {Array.from({ length: settings.repeatCount }, (_, i) => (
-                <span key={i} className={i < practice.repeatsDone ? 'dot done' : 'dot'} />
-              ))}
-            </span>
-          )}
-        </span>
+        <div className="practice-head-right">
+          <button
+            type="button"
+            className={`ghost edit-toggle ${editing ? 'on' : ''}`}
+            disabled={!current}
+            onClick={() => {
+              // 編集は全文の並びに対する操作なので、絞り込みは解いておく。
+              if (!editing) setReviewOnly(false);
+              setEditing((previous) => !previous);
+            }}
+          >
+            {editing ? '編集を終える' : '文を編集'}
+          </button>
+          <span className="counter">
+            {sentences.length ? practice.index + 1 : 0} / {sentences.length}
+            {settings.repeatCount > 1 && (
+              <span className="repeat-dots">
+                {Array.from({ length: settings.repeatCount }, (_, i) => (
+                  <span key={i} className={i < practice.repeatsDone ? 'dot done' : 'dot'} />
+                ))}
+              </span>
+            )}
+          </span>
+        </div>
       </header>
 
       <div className="stage">
@@ -175,6 +214,77 @@ export function PracticeView({ material, onBack, onChange }: Props) {
               : '苦手な文がまだありません。★ を付けると、ここに集まります。'}
           </p>
         </div>
+
+        {editing && current && (
+          <div className="editor">
+            <div className="editor-row">
+              <button
+                type="button"
+                className="ghost"
+                disabled={material.sentences[0]?.id === currentId}
+                onClick={() => editCurrent(mergeWithPrevious)}
+              >
+                前の文とつなぐ
+              </button>
+              <button type="button" className="ghost" onClick={practice.replay}>
+                試聴
+              </button>
+            </div>
+
+            <div className="editor-row">
+              <span className="setting-label">開始 {formatPreciseTimestamp(current.start)}</span>
+              <div className="segmented">
+                <button
+                  type="button"
+                  onClick={() => editCurrent((all, id) => nudgeBoundary(all, id, 'start', -NUDGE))}
+                >
+                  早める
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editCurrent((all, id) => nudgeBoundary(all, id, 'start', NUDGE))}
+                >
+                  遅らせる
+                </button>
+              </div>
+
+              <span className="setting-label">終了 {formatPreciseTimestamp(current.end)}</span>
+              <div className="segmented">
+                <button
+                  type="button"
+                  onClick={() => editCurrent((all, id) => nudgeBoundary(all, id, 'end', -NUDGE))}
+                >
+                  早める
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editCurrent((all, id) => nudgeBoundary(all, id, 'end', NUDGE))}
+                >
+                  遅らせる
+                </button>
+              </div>
+            </div>
+
+            <p className="hint">区切りたい位置を押すと、そこで 2 つの文に分かれます。</p>
+            <div className="split-words">
+              {splitPoints(current.text).map((word, i) => (
+                <Fragment key={i}>
+                  {i > 0 && (
+                    <button
+                      type="button"
+                      className="split-at"
+                      title="ここで分割"
+                      onClick={() => editCurrent((all, id) => splitSentence(all, id, i))}
+                    >
+                      ⁄
+                    </button>
+                  )}
+                  <span className="split-word">{word}</span>
+                </Fragment>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="controls">

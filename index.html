@@ -54,14 +54,24 @@
           detail.textContent = message + '\n\n' + navigator.userAgent;
         }
 
+        // 画面が出ていれば起動は成功している。以降の失敗はここでは扱わない。
+        function started() {
+          var root = document.getElementById('root');
+          return !!(root && root.firstChild);
+        }
+
         // 第 3 引数の true が要る。スクリプトや CSS の読み込み失敗は
         // window までバブリングせず、キャプチャフェーズでしか拾えない。
         window.addEventListener(
           'error',
           function (event) {
+            if (started()) return;
             var target = event.target;
             if (target && target !== window && target.tagName) {
-              show('読み込み失敗: ' + (target.src || target.href || target.tagName));
+              var url = target.src || target.href || '';
+              // YouTube など外部の読み込み失敗は起動の失敗ではないので黙っておく。
+              if (url && url.lastIndexOf(location.origin, 0) !== 0) return;
+              show('読み込み失敗: ' + (url || target.tagName));
               return;
             }
             show(event.message || String(event.error || 'unknown error'));
@@ -70,6 +80,7 @@
         );
 
         window.addEventListener('unhandledrejection', function (event) {
+          if (started()) return;
           var reason = event.reason;
           show('unhandled rejection: ' + ((reason && reason.message) || String(reason)));
         });

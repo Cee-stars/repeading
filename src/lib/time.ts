@@ -21,6 +21,12 @@ export function parseTimestamp(raw: string): number | null {
   return total;
 }
 
+/** 秒を `M:SS.d` に整形する。区間の微調整で 0.1 秒の動きを見せるため。 */
+export function formatPreciseTimestamp(seconds: number): string {
+  const safe = Math.max(0, seconds);
+  return `${formatTimestamp(safe)}.${Math.floor((safe % 1) * 10)}`;
+}
+
 /** 秒を `M:SS` / `H:MM:SS` に整形する。 */
 export function formatTimestamp(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds));

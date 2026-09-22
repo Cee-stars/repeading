@@ -45,7 +45,7 @@
     --warn: #ff9f0a;
     --warn-soft: #38290f;
     --green: #30d158;
-  --danger: #ff453a;
+    --danger: #ff453a;
     --video-bg: #2c2c2e;
     --shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     --shadow-segment: 0 3px 8px rgba(0, 0, 0, 0.35);
@@ -342,7 +342,7 @@ button.primary:not(.wide) {
   margin-bottom: 18px;
 }
 
-.practice-head .ghost {
+.practice-head > .ghost {
   font-size: 15px;
   margin-left: -14px;
 }
@@ -802,4 +802,82 @@ kbd {
 .hard-mark {
   flex-shrink: 0;
   color: var(--accent);
+}
+
+/* --- 文の編集 --- */
+
+.practice-head-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.edit-toggle {
+  padding: 5px 13px;
+  font-size: 13px;
+  border-radius: var(--pill);
+  background: var(--fill);
+  color: var(--muted);
+}
+
+.edit-toggle.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.editor {
+  margin: -6px 0 18px;
+  padding: 18px 22px;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+
+.editor-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 12px;
+}
+
+.editor-row .ghost {
+  background: var(--fill);
+  border-radius: var(--pill);
+  font-size: 14px;
+  color: var(--text);
+}
+
+.editor .hint {
+  margin: 16px 0 8px;
+}
+
+/* 語の間に区切りボタンを挟んで、押した位置で分割する。 */
+.split-words {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  font-size: 18px;
+  line-height: 2;
+}
+
+.split-word {
+  padding: 0 1px;
+}
+
+.split-at {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 5px;
+  margin: 0 1px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.split-at:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: transparent;
 }

@@ -22,8 +22,15 @@ export default function App() {
     [save],
   );
 
-  // 練習中の進捗は保存するだけ。開いている教材を差し替えると練習が揺れるので触らない。
-  const persist = useCallback((updated: Material) => void save(updated), [save]);
+  // 進捗の保存も、文の編集も同じ経路を通す。
+  // 文を編集していないときは sentences の参照が変わらないので、練習の状態は揺れない。
+  const persist = useCallback(
+    (updated: Material) => {
+      setMaterial(updated);
+      void save(updated);
+    },
+    [save],
+  );
 
   return (
     <>

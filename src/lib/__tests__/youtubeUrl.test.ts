@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { extractVideoId } from '../youtubeUrl';
-import { formatTimestamp } from '../time';
+import { formatPreciseTimestamp, formatTimestamp } from '../time';
 
 describe('extractVideoId', () => {
   const id = 'abcdefghij1';
@@ -34,5 +34,14 @@ describe('formatTimestamp', () => {
     expect(formatTimestamp(123)).toBe('2:03');
     expect(formatTimestamp(3723)).toBe('1:02:03');
     expect(formatTimestamp(-1)).toBe('0:00');
+  });
+});
+
+describe('formatPreciseTimestamp', () => {
+  it('shows tenths so a nudge is visible', () => {
+    expect(formatPreciseTimestamp(4.25)).toBe('0:04.2');
+    expect(formatPreciseTimestamp(4.97)).toBe('0:04.9');
+    expect(formatPreciseTimestamp(123)).toBe('2:03.0');
+    expect(formatPreciseTimestamp(-1)).toBe('0:00.0');
   });
 });
