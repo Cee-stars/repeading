@@ -2,8 +2,23 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover でノッチの内側まで使い、余白は CSS の safe-area で取る。 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Repeading — 一文ずつリピーティング</title>
+
+    <meta name="description" content="YouTube の字幕を一文ずつ区切って、聞いて、真似る。" />
+    <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1d1d1f" media="(prefers-color-scheme: dark)" />
+
+    <!-- ホーム画面に追加したときに全画面のアプリとして開く。 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Repeading" />
+
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     <style>
       /* アプリの CSS が読めない場合にも出せるよう、この画面だけは素の style で持つ。 */
       #boot-error {

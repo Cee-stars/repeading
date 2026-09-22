@@ -196,7 +196,12 @@ export function PracticeView({ material, onBack, onChange }: Props) {
             <div className="phase-label">
               {practice.phase === 'listening' && '聞く'}
               {practice.phase === 'mimicking' && '真似る'}
-              {practice.phase === 'idle' && 'スペースキーで開始'}
+              {practice.phase === 'idle' && (
+                <>
+                  <span className="for-keyboard">スペースキーで開始</span>
+                  <span className="for-touch">再生を押して開始</span>
+                </>
+              )}
             </div>
             <button
               type="button"
@@ -213,6 +218,17 @@ export function PracticeView({ material, onBack, onChange }: Props) {
               ? displayText || '　'
               : '苦手な文がまだありません。★ を付けると、ここに集まります。'}
           </p>
+
+          {player.blocked && (
+            <div className="blocked">
+              <p className="hint">
+                再生が始まりませんでした。この端末では、操作なしの再生が止められることがあります。
+              </p>
+              <button type="button" className="primary" onClick={practice.replay}>
+                タップして続ける
+              </button>
+            </div>
+          )}
         </div>
 
         {editing && current && (

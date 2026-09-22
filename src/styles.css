@@ -881,3 +881,182 @@ kbd {
   color: var(--accent-fg);
   border-color: transparent;
 }
+
+/* --- タッチ端末（iPhone など） --- */
+
+/* ノッチとホームインジケータを避ける。 */
+@supports (padding: max(0px)) {
+  #root {
+    padding-left: max(22px, env(safe-area-inset-left));
+    padding-right: max(22px, env(safe-area-inset-right));
+    padding-bottom: max(96px, calc(env(safe-area-inset-bottom) + 64px));
+  }
+}
+
+/* 指で押す端末では、対象を Apple の指針どおり 44px 以上にする。 */
+@media (pointer: coarse) {
+  .segmented {
+    border-radius: 12px;
+  }
+
+  .segmented button {
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+
+  .setting.checkbox input {
+    width: 51px;
+    height: 31px;
+  }
+
+  .setting.checkbox input::after {
+    width: 27px;
+    height: 27px;
+  }
+
+  .setting.checkbox input:checked::after {
+    transform: translateX(20px);
+  }
+
+  .theme-toggle,
+  .edit-toggle,
+  .mark {
+    min-height: 44px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .controls .ghost {
+    min-width: 60px;
+    min-height: 56px;
+    font-size: 20px;
+  }
+
+  .controls .primary.wide {
+    min-height: 56px;
+    font-size: 19px;
+  }
+
+  .sentence-list button {
+    min-height: 48px;
+    align-items: center;
+  }
+
+  .split-at {
+    min-width: 32px;
+    min-height: 44px;
+  }
+
+  .editor-row .ghost {
+    min-height: 44px;
+  }
+
+  /* キーボードが無い端末に近道の一覧を出しても場所を取るだけ。 */
+  .shortcuts {
+    display: none;
+  }
+}
+
+/* 操作の案内は入力手段に合わせて出し分ける。 */
+.for-touch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .for-keyboard {
+    display: none;
+  }
+
+  .for-touch {
+    display: inline;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings {
+    gap: 12px 14px;
+    padding: 16px;
+  }
+
+  .setting-label {
+    min-width: 3.6em;
+  }
+
+  .practice-head > .ghost {
+    font-size: 14px;
+  }
+
+  .counter {
+    font-size: 13px;
+  }
+}
+
+/* 自動再生が止められたときの案内。 */
+.blocked {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.blocked .hint {
+  margin: 0 0 12px;
+}
+
+.blocked .primary {
+  min-width: 0;
+  width: 100%;
+}
+
+/*
+ * 狭い画面では設定を 1 行 1 項目にする。
+ * 「真似る間」は選択肢が 5 つあり、ラベルと横に並べると入りきらない。
+ */
+@media (max-width: 480px) {
+  .settings {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .setting {
+    justify-content: space-between;
+    min-width: 0;
+  }
+
+  .setting.checkbox {
+    justify-content: flex-start;
+  }
+
+  .segmented {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) and (pointer: coarse) {
+  .segmented button {
+    padding: 0 10px;
+  }
+}
+
+@media (pointer: coarse) {
+  .practice-head > .ghost {
+    min-height: 44px;
+  }
+}
+
+/* ラベルが 2 行に折れると行が間延びするので、折らずに収める。 */
+@media (max-width: 480px) {
+  .setting-label {
+    white-space: nowrap;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) and (pointer: coarse) {
+  .segmented button {
+    padding: 0 8px;
+  }
+}

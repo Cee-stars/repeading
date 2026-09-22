@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 一文を繰り返す、を表す円環の矢印と中央の点。 -->
+  <rect width="512" height="512" fill="#0071e3" />
+  <!--
+    中心 (256,256) 半径 120 の円弧。上に隙間を残して時計回りに 320 度。
+    矢じりと干渉しないよう、線の端は丸めずに切り落とす。
+  -->
+  <path
+    d="M 297 143 A 120 120 0 1 1 215 143"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="38"
+    stroke-linecap="butt"
+  />
+  <!-- 弧の終端 (215,143) を底辺の中心に置いた矢じり。 -->
+  <polygon points="258,127 226,173 204,113" fill="#ffffff" />
+  <circle cx="256" cy="256" r="34" fill="#ffffff" />
+</svg>
