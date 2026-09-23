@@ -63,3 +63,18 @@ export function saveMaterial(material: Material): Promise<IDBValidKey> {
 export function deleteMaterial(id: string): Promise<undefined> {
   return withStore('readwrite', (store) => store.delete(id));
 }
+
+/**
+ * 保存領域を消さないようブラウザに頼む。
+ * 許可されないと、Safari は一定期間サイトを開かないと保存を消す（ITP）。
+ * 頼めるだけで確実ではないので、書き出しによる手元の控えも別に用意している。
+ */
+export async function requestPersistentStorage(): Promise<boolean> {
+  try {
+    if (!navigator.storage?.persist) return false;
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch {
+    return false;
+  }
+}

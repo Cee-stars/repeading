@@ -52,8 +52,10 @@ export default function App() {
           <Library
             materials={library.materials}
             status={library.status}
+            persisted={library.persisted}
             remove={library.remove}
             onOpen={open}
+            onImport={library.importMaterials}
           />
         </ImportPanel>
       )}
