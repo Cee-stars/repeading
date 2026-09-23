@@ -65,8 +65,8 @@ export function ImportPanel({ onStart, children }: Props) {
       <section className="field">
         <label htmlFor="subs">2. 字幕</label>
         <p className="hint">
-          YouTube の「…」→「文字起こしを表示」の内容をコピーして貼り付けるか、SRT / VTT
-          ファイルをここにドロップしてください。形式は自動で判定します。
+          YouTube の「…」→「文字起こしを表示」の内容を貼り付けてください。ページごとコピーしても、
+          まわりの文章は自動で捨てます。SRT / VTT ファイルをここにドロップしても構いません。
         </p>
         <textarea
           id="subs"

@@ -90,6 +90,54 @@ describe('parseSubtitles', () => {
     expect(result.cues[1].text).toBe('the wind is cold');
   });
 
+  it('picks the transcript out of a whole page that was copied around it', () => {
+    // 文字起こしパネルだけを選ぶのは手間なので、ページごと貼られることを想定する。
+    const page = [
+      'Transcript',
+      'Search in video',
+      '0:01 the sky is clear today.',
+      '0:04 the wind is cold.',
+      '0:07 we should take a coat.',
+      '0:10 the train leaves at noon.',
+      '0:13 we can walk to the station.',
+      '0:16 it takes about ten minutes.',
+      '0:19 the platform is on the left.',
+      '0:22 we should buy the tickets first.',
+      '0:25 the machine takes coins.',
+      '0:28 there is a bakery inside.',
+      'English (auto-generated)',
+      'Some Channel',
+      '12,345 views',
+      'Subscribe to see more of this.',
+    ].join('\n');
+
+    const result = parseSubtitles(page);
+
+    expect(result.format).toBe('youtube-transcript');
+    expect(result.cues).toHaveLength(10);
+    expect(result.cues[0]).toEqual({ start: 1, end: 4, text: 'the sky is clear today.' });
+    // 前後の飾り文字は本文に混ざらない。
+    expect(result.cues.at(-1)?.text).toBe('there is a bakery inside.');
+  });
+
+  it('ignores a timestamp that jumps backwards, such as a video length', () => {
+    const result = parseSubtitles(
+      ['0:01 the sky is clear today.', '0:04 the wind is cold.', '0:02 9:35'].join('\n'),
+    );
+
+    expect(result.cues.map((c) => c.text)).toEqual([
+      'the sky is clear today.',
+      'the wind is cold.',
+    ]);
+  });
+
+  it('still joins text that follows a timestamp on its own line', () => {
+    // こちらの形式では、時刻で始まらない行は本文なので捨ててはいけない。
+    const result = parseSubtitles('0:01\nthe sky is clear\n0:04\nthe wind is cold');
+
+    expect(result.cues.map((c) => c.text)).toEqual(['the sky is clear', 'the wind is cold']);
+  });
+
   it('flags text without timestamps as untimed', () => {
     const result = parseSubtitles('the sky is clear. the wind is cold.');
 

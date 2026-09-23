@@ -42,7 +42,16 @@ export function detectFormat(raw: string): SubtitleFormat {
 
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   const stamped = lines.filter((l) => YT_LINE.test(l.trim())).length;
-  // 行の 1/4 以上が `0:12` 形式なら文字起こしパネルからの貼り付けとみなす。
+
+  /*
+   * 文字起こしパネルだけを選ぶのは手間なので、ページ全体をコピーして貼られることを想定する。
+   * その場合まわりの文章に埋もれて割合では判定できないので、`0:12` 形式の行が
+   * まとまった数あれば文字起こしとみなす。ふつうの文章にこれだけ並ぶことはない。
+   */
+  const MANY_STAMPS = 10;
+  if (stamped >= MANY_STAMPS) return 'youtube-transcript';
+
+  // 貼り付けが文字起こしだけなら、行の 1/4 以上が時刻で始まる。
   return stamped >= 2 && stamped * 4 >= lines.length ? 'youtube-transcript' : 'plain-text';
 }
 
@@ -78,22 +87,40 @@ function parseCueBased(raw: string): Cue[] {
 /** 1 文字あたりの想定発話速度（秒）。末尾 cue の終了時刻を推定するのに使う。 */
 const SECONDS_PER_CHAR = 1 / 14;
 
+/** 時刻と本文が同じ行に並ぶ形式が主かどうか。 */
+function hasInlineText(lines: string[]): boolean {
+  const stamped = lines.filter((line) => YT_LINE.test(line));
+  const inline = stamped.filter((line) => (line.match(YT_LINE)?.[2] ?? '') !== '').length;
+  return stamped.length > 0 && inline * 2 >= stamped.length;
+}
+
 /** YouTube の「文字起こしを表示」からコピーしたテキストを読む。 */
 function parseYouTubeTranscript(raw: string): Cue[] {
+  const lines = raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  /*
+   * 「0:12 本文」のように 1 行で完結しているなら、時刻で始まらない行は
+   * ページの他の部分とみなして捨てる。ページ全体をコピーして貼っても取り込めるようにするため。
+   * 「0:12」の次の行に本文が来る形式のときだけ、後続行を本文として拾う。
+   */
+  const inlineOnly = hasInlineText(lines);
+
   const partials: { start: number; parts: string[] }[] = [];
+  let lastStart = -1;
 
-  for (const line of raw.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    const match = trimmed.match(YT_LINE);
+  for (const line of lines) {
+    const match = line.match(YT_LINE);
     if (match) {
       const start = parseTimestamp(match[1]);
-      if (start === null) continue;
-      // タイムスタンプ単独行なら、本文は後続行から拾う。
+      // 文字起こしの時刻は前に戻らない。戻る行は動画の長さなど別物なので捨てる。
+      if (start === null || start < lastStart) continue;
+      lastStart = start;
       partials.push({ start, parts: match[2] ? [match[2]] : [] });
-    } else if (partials.length) {
-      partials[partials.length - 1].parts.push(trimmed);
+    } else if (!inlineOnly && partials.length) {
+      partials[partials.length - 1].parts.push(line);
     }
   }
 
