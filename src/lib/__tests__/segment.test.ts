@@ -74,6 +74,54 @@ describe('segmentCues', () => {
     expect(sentences[0]).toMatchObject({ id: 0, start: 0, end: 3 });
   });
 
+  it('splits at sentence ends even when they fall in the middle of a cue', () => {
+    // 字幕の行は文の途中で改行される。行の境界で切ると文にならない。
+    const cues: Cue[] = [
+      { start: 0, end: 4, text: 'the sky is clear today. I open the window and look' },
+      { start: 4, end: 8, text: 'outside. The wind is cold.' },
+    ];
+
+    expect(segmentCues(cues).map((s) => s.text)).toEqual([
+      'the sky is clear today.',
+      'I open the window and look outside.',
+      'The wind is cold.',
+    ]);
+  });
+
+  it('places the boundary inside the cue that contains it', () => {
+    const cues: Cue[] = [
+      { start: 0, end: 10, text: 'aaaa. bbbb' },
+      { start: 10, end: 20, text: 'cccc.' },
+    ];
+
+    const [first, second] = segmentCues(cues);
+
+    expect(first.text).toBe('aaaa.');
+    // 'aaaa.' は 10 文字中 5 文字目までなので、区間 0〜10 秒の中ほどで切れる。
+    expect(first.end).toBeCloseTo(5);
+    expect(second.start).toBeCloseTo(5);
+    expect(second.end).toBe(20);
+  });
+
+  it('does not treat a decimal point as a sentence end', () => {
+    const cues: Cue[] = [{ start: 0, end: 4, text: 'it weighs 3.5 kg in total.' }];
+
+    expect(segmentCues(cues).map((s) => s.text)).toEqual(['it weighs 3.5 kg in total.']);
+  });
+
+  it('breaks an over-long sentence at a comma', () => {
+    const long =
+      'when the morning comes and the light reaches the window, ' +
+      'I get up and make coffee before anyone else is awake.';
+    const cues: Cue[] = [{ start: 0, end: 10, text: long }];
+
+    const sentences = segmentCues(cues);
+
+    expect(sentences).toHaveLength(2);
+    expect(sentences[0].text.endsWith(',')).toBe(true);
+    expect(sentences.map((s) => s.text).join(' ')).toBe(long);
+  });
+
   it('splits on silence when the captions carry no punctuation', () => {
     const cues: Cue[] = [
       { start: 0, end: 1, text: 'the sky is clear' },

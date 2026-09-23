@@ -10,8 +10,6 @@ const ABBREVIATIONS = new Set([
   'vs', 'etc', 'inc', 'ltd', 'co', 'approx', 'eg', 'ie', 'cf', 'al',
 ]);
 
-/** 句読点付き字幕では、文中の間で切らないようギャップ判定を緩める。 */
-const PUNCTUATED_MIN_GAP = 1.5;
 /** ローリング字幕の重複を探す範囲（語数）。 */
 const OVERLAP_WINDOW = 20;
 
@@ -82,6 +80,144 @@ export function dedupeCues(cues: Cue[]): Cue[] {
 }
 
 /**
+ * cue 列を 1 本の本文にまとめ、文字位置から時刻を引けるようにする。
+ * 字幕の行は文の途中で改行されるので、行の境界ではなく本文の上で文を切るために要る。
+ */
+interface Stream {
+  text: string;
+  spans: { start: number; end: number; from: number; to: number }[];
+}
+
+function buildStream(cues: Cue[]): Stream {
+  let text = '';
+  const spans: Stream['spans'] = [];
+
+  for (const cue of cues) {
+    if (text) text += ' ';
+    const from = text.length;
+    text += cue.text;
+    spans.push({ start: cue.start, end: cue.end, from, to: text.length });
+  }
+
+  return { text, spans };
+}
+
+/** 文字位置の時刻を、その位置を含む cue の中で文字数に比例して按分する。 */
+export function timeAt(stream: Stream, offset: number): number {
+  const { spans } = stream;
+  if (!spans.length) return 0;
+  if (offset <= spans[0].from) return spans[0].start;
+
+  const last = spans[spans.length - 1];
+  if (offset >= last.to) return last.end;
+
+  for (const span of spans) {
+    if (offset < span.from) return span.start; // cue と cue の隙間
+    if (offset <= span.to) {
+      const width = span.to - span.from;
+      return width > 0 ? span.start + ((span.end - span.start) * (offset - span.from)) / width : span.start;
+    }
+  }
+
+  return last.end;
+}
+
+/** 文末の記号の直後の位置を集める。小数点や略語では切らない。 */
+function sentenceEnds(text: string): number[] {
+  const ends: number[] = [];
+  const pattern = /[.!?。！？]+["'」』)\]]*/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text))) {
+    const end = match.index + match[0].length;
+    // 文の切れ目なら後ろは空白か終端。"3.5" の途中では切らない。
+    if (end < text.length && !/\s/.test(text[end])) continue;
+    // 略語の判定には直前の語だけ見れば足りる。
+    if (!endsSentence(text.slice(Math.max(0, end - 40), end))) continue;
+    ends.push(end);
+  }
+
+  return ends;
+}
+
+/**
+ * 長すぎる文をさらに割る。1 回で真似られない長さは練習の単位にならない。
+ * 読点を優先し、無ければ語の切れ目で、そのつど中央に近いところを選ぶ。
+ */
+function splitLong(text: string, offset: number, maxChars: number, out: number[]): void {
+  if (text.length <= maxChars) return;
+
+  const positions: number[] = [];
+  const collect = (pattern: RegExp) => {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(text))) positions.push(match.index + match[0].length);
+  };
+
+  collect(/[,、，]\s/g);
+  if (!positions.length) collect(/\s+/g);
+
+  const inner = positions.filter((p) => p > 0 && p < text.length);
+  if (!inner.length) return;
+
+  const middle = text.length / 2;
+  const cut = inner.reduce((a, b) => (Math.abs(b - middle) < Math.abs(a - middle) ? b : a));
+
+  out.push(offset + cut);
+  splitLong(text.slice(0, cut), offset, maxChars, out);
+  splitLong(text.slice(cut), offset + cut, maxChars, out);
+}
+
+/**
+ * 句読点のある字幕を文に割る。
+ * 字幕の行は文の途中で改行されるため、行ではなく連結した本文の上で切る。
+ */
+function segmentByPunctuation(cues: Cue[], options: SegmentOptions): Sentence[] {
+  const stream = buildStream(cues);
+  const { text } = stream;
+
+  const marks = sentenceEnds(text);
+
+  // 文末で割ったうえで、まだ長い塊は読点などでほぐす。
+  const extra: number[] = [];
+  let previous = 0;
+  for (const mark of [...marks, text.length]) {
+    splitLong(text.slice(previous, mark), previous, options.maxChars, extra);
+    previous = mark;
+  }
+
+  const cuts = [...new Set([...marks, ...extra])].sort((a, b) => a - b);
+
+  const sentences: Sentence[] = [];
+  let from = 0;
+
+  for (const to of [...cuts, text.length]) {
+    const piece = text.slice(from, to).trim();
+    if (!piece) {
+      from = to;
+      continue;
+    }
+
+    const last = sentences[sentences.length - 1];
+    // 短すぎる断片だけ取り残さず、前の文に付ける。
+    if (piece.length < options.minChars && last) {
+      last.text = `${last.text} ${piece}`;
+      last.end = timeAt(stream, to);
+    } else {
+      sentences.push({
+        id: sentences.length,
+        start: timeAt(stream, from),
+        end: timeAt(stream, to),
+        text: piece,
+      });
+    }
+
+    from = to;
+  }
+
+  return sentences;
+}
+
+/**
  * cue 列を練習用の文に組み直す。
  * 句読点があればそれを優先し、無い自動字幕では「無音ギャップ + 長さ上限」で切る。
  */
@@ -90,9 +226,9 @@ export function segmentCues(cues: Cue[], options: SegmentOptions = DEFAULT_SEGME
   if (!clean.length) return [];
 
   const hasPunctuation = /[.!?。！？]/.test(clean.map((c) => c.text).join(' '));
-  const minGap = hasPunctuation
-    ? Math.max(options.gapThreshold, PUNCTUATED_MIN_GAP)
-    : options.gapThreshold;
+  if (hasPunctuation) return segmentByPunctuation(clean, options);
+
+  const minGap = options.gapThreshold;
 
   const sentences: Sentence[] = [];
   let buffer: Cue[] = [];
@@ -122,11 +258,9 @@ export function segmentCues(cues: Cue[], options: SegmentOptions = DEFAULT_SEGME
     const duration = cue.end - buffer[0].start;
     const gap = clean[i + 1].start - cue.end;
 
+    // ここに来るのは句読点が無い字幕だけ。頼れるのは無音と長さしかない。
     const shouldBreak =
-      (hasPunctuation && endsSentence(cue.text)) ||
-      gap >= minGap ||
-      text.length >= options.maxChars ||
-      duration >= options.maxDuration;
+      gap >= minGap || text.length >= options.maxChars || duration >= options.maxDuration;
 
     // 短すぎる断片（相槌や切れ端）は次の cue と繋いで 1 文にする。
     if (shouldBreak && text.length >= options.minChars) flush();
