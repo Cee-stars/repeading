@@ -41,8 +41,6 @@ export function ImportPanel({ onStart, children }: Props) {
         <p>YouTube の字幕を一文ずつ区切って、聞いて、真似る。</p>
       </header>
 
-      {children}
-
       <section className="field">
         <label htmlFor="url">1. 動画の URL</label>
         <input
@@ -155,6 +153,8 @@ export function ImportPanel({ onStart, children }: Props) {
       >
         練習を始める
       </button>
+
+      {children}
     </div>
   );
 }

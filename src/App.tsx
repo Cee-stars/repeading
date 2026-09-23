@@ -26,7 +26,9 @@ export default function App() {
   // 文を編集していないときは sentences の参照が変わらないので、練習の状態は揺れない。
   const persist = useCallback(
     (updated: Material) => {
-      setMaterial(updated);
+      // 画面を離れるときにも保存が走る。いま開いている教材でなければ差し替えない。
+      // そうしないと、閉じた直後の保存が教材を復活させて練習画面に戻ってしまう。
+      setMaterial((current) => (current?.id === updated.id ? updated : current));
       void save(updated);
     },
     [save],
