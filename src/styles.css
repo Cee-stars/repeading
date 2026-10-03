@@ -1072,3 +1072,13 @@ kbd {
 .library .hint {
   max-width: 62ch;
 }
+
+/* ビルド時刻。切り分け用なので目立たせない。 */
+.build-stamp {
+  margin: 48px 0 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}

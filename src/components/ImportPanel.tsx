@@ -155,6 +155,9 @@ export function ImportPanel({ onStart, children }: Props) {
       </button>
 
       {children}
+
+      {/* 古いビルドをつかんでいないか切り分けられるように出す。 */}
+      <p className="build-stamp">ビルド {__BUILD_TIME__}</p>
     </div>
   );
 }
