@@ -1,18 +1,27 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ImportPanel } from './components/ImportPanel';
 import { Library } from './components/Library';
 import { PracticeView } from './components/PracticeView';
 import { ThemeToggle } from './components/ThemeToggle';
+import { WordList } from './components/WordList';
 import { useLibrary } from './lib/useLibrary';
 import { useTheme } from './lib/useTheme';
 import { reloadFresh, useUpdateCheck } from './lib/useUpdateCheck';
+import { useWords } from './lib/useWords';
 import type { Material } from './lib/material';
 
 export default function App() {
   const [material, setMaterial] = useState<Material | null>(null);
   const theme = useTheme();
   const library = useLibrary();
+  const words = useWords();
   const stale = useUpdateCheck();
+
+  // 字幕側は語ごとに引くので、毎回配列を探さずに済む形で渡す。
+  const lookedUp = useMemo(
+    () => new Set(words.words.map((entry) => entry.word.toLowerCase())),
+    [words.words],
+  );
 
   const { save } = library;
 
@@ -57,6 +66,8 @@ export default function App() {
           material={material}
           onBack={() => setMaterial(null)}
           onChange={persist}
+          lookedUp={lookedUp}
+          onLookup={words.record}
         />
       ) : (
         <ImportPanel onStart={open}>
@@ -67,6 +78,14 @@ export default function App() {
             remove={library.remove}
             onOpen={open}
             onImport={library.importMaterials}
+            onImportWords={words.importWords}
+            words={words.words}
+          />
+          <WordList
+            words={words.words}
+            available={words.available}
+            remove={words.remove}
+            clear={words.clear}
           />
         </ImportPanel>
       )}

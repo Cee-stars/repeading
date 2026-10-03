@@ -1,5 +1,6 @@
 import type { Material } from './material';
 import type { Sentence } from './types';
+import { isWordEntry, type WordEntry } from './words';
 
 /** 書き出しファイルの形。version は将来の読み込み分岐のために持たせる。 */
 export interface Backup {
@@ -7,9 +8,16 @@ export interface Backup {
   version: number;
   exportedAt: number;
   materials: Material[];
+  words: WordEntry[];
 }
 
-export const BACKUP_VERSION = 1;
+/** 読み込んだファイルの中身。版 1 のファイルには words が無いので、空で埋まる。 */
+export interface BackupContent {
+  materials: Material[];
+  words: WordEntry[];
+}
+
+export const BACKUP_VERSION = 2;
 
 function isSentence(value: unknown): value is Sentence {
   if (!value || typeof value !== 'object') return false;
@@ -41,15 +49,20 @@ export function isMaterial(value: unknown): value is Material {
   );
 }
 
-export function buildBackup(materials: Material[], now = Date.now()): Backup {
-  return { app: 'repeading', version: BACKUP_VERSION, exportedAt: now, materials };
+export function buildBackup(
+  materials: Material[],
+  words: WordEntry[] = [],
+  now = Date.now(),
+): Backup {
+  return { app: 'repeading', version: BACKUP_VERSION, exportedAt: now, materials, words };
 }
 
 /**
  * 書き出したファイルを読む。壊れていれば理由を添えて投げる。
  * 教材の配列だけの JSON も受け付ける（手で切り貼りされることを想定）。
+ * 単語だけ・教材だけのファイルも通す。片方しか無くても取り込めたほうが助かる。
  */
-export function parseBackup(text: string): Material[] {
+export function parseBackup(text: string): BackupContent {
   let data: unknown;
   try {
     data = JSON.parse(text);
@@ -57,16 +70,17 @@ export function parseBackup(text: string): Material[] {
     throw new Error('ファイルの形式が読み取れません。');
   }
 
-  const list = Array.isArray(data)
-    ? data
-    : ((data as Partial<Backup> | null)?.materials ?? null);
+  const file = (data as Partial<Backup> | null) ?? null;
+  const list = Array.isArray(data) ? data : (file?.materials ?? null);
 
-  if (!Array.isArray(list)) throw new Error('教材が入っていないファイルです。');
+  const materials = Array.isArray(list) ? list.filter(isMaterial) : [];
+  const words = Array.isArray(file?.words) ? file.words.filter(isWordEntry) : [];
 
-  const materials = list.filter(isMaterial);
-  if (!materials.length) throw new Error('読み込める教材がありませんでした。');
+  if (!materials.length && !words.length) {
+    throw new Error('読み込める教材がありませんでした。');
+  }
 
-  return materials;
+  return { materials, words };
 }
 
 /**

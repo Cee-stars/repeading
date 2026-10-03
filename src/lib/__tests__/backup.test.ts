@@ -38,25 +38,59 @@ describe('isMaterial', () => {
 });
 
 describe('parseBackup', () => {
+  const word = {
+    word: 'reckon',
+    count: 2,
+    firstAt: 1000,
+    lastAt: 2000,
+    context: 'I reckon so.',
+    from: '朝の習慣',
+  };
+
   it('reads a file this app wrote', () => {
-    const backup = buildBackup([material('朝の習慣', 2000)]);
-    expect(parseBackup(JSON.stringify(backup)).map((m) => m.title)).toEqual(['朝の習慣']);
+    const backup = buildBackup([material('朝の習慣', 2000)], [word]);
+    const content = parseBackup(JSON.stringify(backup));
+
+    expect(content.materials.map((m) => m.title)).toEqual(['朝の習慣']);
+    expect(content.words.map((w) => w.word)).toEqual(['reckon']);
   });
 
   it('also reads a bare array of materials', () => {
-    expect(parseBackup(JSON.stringify([material('買い物', 2000)]))).toHaveLength(1);
+    expect(parseBackup(JSON.stringify([material('買い物', 2000)])).materials).toHaveLength(1);
   });
 
-  it('drops entries that are not materials, keeping the rest', () => {
-    const backup = buildBackup([material('朝の習慣', 2000)]);
-    const mixed = { ...backup, materials: [...backup.materials, { id: 'broken' }] };
+  it('reads a file written before the word list existed', () => {
+    // 版 1 の控えには words が無い。教材だけ取り込めればよい。
+    const old = { app: 'repeading', version: 1, exportedAt: 0, materials: [material('古い', 1)] };
+    const content = parseBackup(JSON.stringify(old));
 
-    expect(parseBackup(JSON.stringify(mixed))).toHaveLength(1);
+    expect(content.materials).toHaveLength(1);
+    expect(content.words).toEqual([]);
+  });
+
+  it('accepts a file that only has words in it', () => {
+    const content = parseBackup(JSON.stringify({ app: 'repeading', words: [word] }));
+
+    expect(content.materials).toEqual([]);
+    expect(content.words).toHaveLength(1);
+  });
+
+  it('drops entries that are not materials or words, keeping the rest', () => {
+    const backup = buildBackup([material('朝の習慣', 2000)], [word]);
+    const mixed = {
+      ...backup,
+      materials: [...backup.materials, { id: 'broken' }],
+      words: [...backup.words, { word: 'broken' }],
+    };
+    const content = parseBackup(JSON.stringify(mixed));
+
+    expect(content.materials).toHaveLength(1);
+    expect(content.words).toHaveLength(1);
   });
 
   it('explains what is wrong instead of failing silently', () => {
     expect(() => parseBackup('not json at all')).toThrow('形式');
-    expect(() => parseBackup('{"app":"repeading"}')).toThrow('教材が入っていない');
+    expect(() => parseBackup('{"app":"repeading"}')).toThrow('読み込める教材がありません');
     expect(() => parseBackup('[{"id":"broken"}]')).toThrow('読み込める教材がありません');
   });
 });

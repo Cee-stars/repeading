@@ -7,7 +7,7 @@ import {
   splitPoints,
   splitSentence,
 } from '../lib/edit';
-import { dictionaryUrl } from '../lib/dictionary';
+import { dictionaryUrl, normalizeWord } from '../lib/dictionary';
 import { selectSentences, toggleHardId } from '../lib/material';
 import type { Material } from '../lib/material';
 import { formatPreciseTimestamp } from '../lib/time';
@@ -38,18 +38,36 @@ const NUDGE = 0.2;
 /**
  * 字幕を、語ごとに辞書を引けるようにして描く。
  * 空白はそのまま残して、文の見た目を変えない。
+ * 一度調べた語には印が付くので、同じ語で迷っているかどうかが分かる。
  */
-function WordLinks({ text }: { text: string }) {
+function WordLinks({
+  text,
+  lookedUp,
+  onLookup,
+}: {
+  text: string;
+  lookedUp: Set<string>;
+  onLookup: (word: string, context: string) => void;
+}) {
   return (
     <>
       {text.split(/(\s+)/).map((part, index) => {
         if (!part.trim()) return part;
 
-        const url = dictionaryUrl(part);
-        if (!url) return <span key={index}>{part}</span>;
+        const word = normalizeWord(part);
+        const url = word && dictionaryUrl(word);
+        if (!word || !url) return <span key={index}>{part}</span>;
 
         return (
-          <a key={index} className="word" href={url} target="_blank" rel="noopener noreferrer">
+          <a
+            key={index}
+            className={`word ${lookedUp.has(word.toLowerCase()) ? 'looked-up' : ''}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            // 辞書を開くついでに記録する。別に覚える操作を増やしたくない。
+            onClick={() => onLookup(word, text)}
+          >
             {part}
           </a>
         );
@@ -69,9 +87,12 @@ interface Props {
   material: Material;
   onBack: () => void;
   onChange: (material: Material) => void;
+  /** これまでに調べた語（小文字）。字幕に印を付けるのに使う。 */
+  lookedUp: Set<string>;
+  onLookup: (word: string, context: string, from: string) => void;
 }
 
-export function PracticeView({ material, onBack, onChange }: Props) {
+export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }: Props) {
   const { settings, update } = useSettings();
   const [hardIds, setHardIds] = useState(material.hardIds);
   const [reviewOnly, setReviewOnly] = useState(false);
@@ -252,14 +273,20 @@ export function PracticeView({ material, onBack, onChange }: Props) {
               '苦手な文がまだありません。★ を付けると、ここに集まります。'
             ) : settings.reveal === 'shown' ? (
               // 全文が出ているときだけ、語ごとに辞書を引けるようにする。
-              <WordLinks text={current.text} />
+              <WordLinks
+                text={current.text}
+                lookedUp={lookedUp}
+                onLookup={(word, context) => onLookup(word, context, material.title)}
+              />
             ) : (
               displayText || '　'
             )}
           </p>
 
           {current && settings.reveal === 'shown' && (
-            <p className="hint caption-note">単語を押すと辞書が開きます。</p>
+            <p className="hint caption-note">
+              単語を押すと辞書が開き、「調べた単語」に残ります。一度調べた単語には下線が付きます。
+            </p>
           )}
 
           {player.blocked && (

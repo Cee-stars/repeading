@@ -3,14 +3,15 @@ import { buildBackup, parseBackup } from '../lib/backup';
 import { progressRatio, resumeIndex } from '../lib/material';
 import type { Material } from '../lib/material';
 import type { LibraryApi } from '../lib/useLibrary';
+import type { WordEntry } from '../lib/words';
 
 function formatDate(time: number): string {
   return new Date(time).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
 }
 
-/** 書き出したファイルを保存させる。 */
-function download(materials: Material[]): void {
-  const json = JSON.stringify(buildBackup(materials), null, 2);
+/** 書き出したファイルを保存させる。教材と調べた単語を 1 つのファイルにまとめる。 */
+function download(materials: Material[], words: WordEntry[]): void {
+  const json = JSON.stringify(buildBackup(materials, words), null, 2);
   const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
   const link = document.createElement('a');
   const stamp = new Date().toISOString().slice(0, 10);
@@ -24,9 +25,21 @@ function download(materials: Material[]): void {
 interface Props extends Pick<LibraryApi, 'materials' | 'status' | 'persisted' | 'remove'> {
   onOpen: (material: Material) => void;
   onImport: (materials: Material[]) => Promise<number>;
+  /** 控えには調べた単語も入る。書き出しと読み込みの両方で扱う。 */
+  words: WordEntry[];
+  onImportWords: (words: WordEntry[]) => Promise<number>;
 }
 
-export function Library({ materials, status, persisted, remove, onOpen, onImport }: Props) {
+export function Library({
+  materials,
+  status,
+  persisted,
+  remove,
+  onOpen,
+  onImport,
+  words,
+  onImportWords,
+}: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
 
@@ -46,8 +59,12 @@ export function Library({ materials, status, persisted, remove, onOpen, onImport
 
   const readFile = async (file: File) => {
     try {
-      const count = await onImport(parseBackup(await file.text()));
-      setMessage({ text: `${count} 件を読み込みました。`, error: false });
+      const content = parseBackup(await file.text());
+      const count = content.materials.length ? await onImport(content.materials) : 0;
+      const wordCount = content.words.length ? await onImportWords(content.words) : 0;
+
+      const parts = [count > 0 && `教材 ${count} 件`, wordCount > 0 && `単語 ${wordCount} 語`];
+      setMessage({ text: `${parts.filter(Boolean).join(' と ')}を読み込みました。`, error: false });
     } catch (error) {
       setMessage({ text: error instanceof Error ? error.message : '読み込めませんでした。', error: true });
     }
@@ -98,8 +115,8 @@ export function Library({ materials, status, persisted, remove, onOpen, onImport
       )}
 
       <div className="row">
-        {materials.length > 0 && (
-          <button type="button" className="ghost" onClick={() => download(materials)}>
+        {(materials.length > 0 || words.length > 0) && (
+          <button type="button" className="ghost" onClick={() => download(materials, words)}>
             書き出す
           </button>
         )}
@@ -123,7 +140,7 @@ export function Library({ materials, status, persisted, remove, onOpen, onImport
       {message && <p className={`hint ${message.error ? 'warn' : ''}`}>{message.text}</p>}
 
       <p className="hint">
-        教材はこのブラウザの中だけに保存され、期限を設けずに残ります。ただしブラウザ側の
+        教材と調べた単語はこのブラウザの中だけに保存され、期限を設けずに残ります。ただしブラウザ側の
         都合で消えることがあります（Safari は一定期間このサイトを開かないと保存を消します）。
         {persisted
           ? ' このブラウザでは保存領域の保持が許可されています。'
