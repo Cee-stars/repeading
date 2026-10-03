@@ -1136,3 +1136,31 @@ kbd {
 .caption-note {
   margin-top: 12px;
 }
+
+/* プレーヤーが使えないときの案内。黙って「準備中」のままにしない。 */
+.video-problem {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  text-align: center;
+  background: var(--video-bg);
+  color: var(--text);
+}
+
+.video-problem p {
+  margin: 0;
+  max-width: 34em;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.video-problem .primary {
+  min-width: 0;
+  padding: 9px 20px;
+  font-size: 15px;
+}

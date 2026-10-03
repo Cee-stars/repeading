@@ -212,7 +212,17 @@ export function PracticeView({ material, onBack, onChange }: Props) {
       <div className="stage">
         <div className="video">
           <div ref={player.containerRef} className="video-frame" />
-          {!player.ready && <div className="video-loading">プレーヤーを準備中…</div>}
+
+          {player.problem ? (
+            <div className="video-problem">
+              <p>{player.problem}</p>
+              <button type="button" className="primary" onClick={player.retry}>
+                もう一度試す
+              </button>
+            </div>
+          ) : (
+            !player.ready && <div className="video-loading">プレーヤーを準備中…</div>
+          )}
         </div>
 
         <div className={`caption phase-${practice.phase}`}>
