@@ -7,6 +7,7 @@ import {
   splitPoints,
   splitSentence,
 } from '../lib/edit';
+import { dictionaryUrl } from '../lib/dictionary';
 import { selectSentences, toggleHardId } from '../lib/material';
 import type { Material } from '../lib/material';
 import { formatPreciseTimestamp } from '../lib/time';
@@ -33,6 +34,29 @@ const SAVE_DEBOUNCE_MS = 600;
 
 /** 区間の端を 1 回でずらす量（秒）。自動字幕のずれはおおむねこの単位で直せる。 */
 const NUDGE = 0.2;
+
+/**
+ * 字幕を、語ごとに辞書を引けるようにして描く。
+ * 空白はそのまま残して、文の見た目を変えない。
+ */
+function WordLinks({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/(\s+)/).map((part, index) => {
+        if (!part.trim()) return part;
+
+        const url = dictionaryUrl(part);
+        if (!url) return <span key={index}>{part}</span>;
+
+        return (
+          <a key={index} className="word" href={url} target="_blank" rel="noopener noreferrer">
+            {part}
+          </a>
+        );
+      })}
+    </>
+  );
+}
 
 /** 各単語の 1 文字目だけ残す。思い出せないときの手がかり用。 */
 function toHint(text: string): string {
@@ -214,10 +238,19 @@ export function PracticeView({ material, onBack, onChange }: Props) {
             </button>
           </div>
           <p className={`caption-text reveal-${settings.reveal}`}>
-            {current
-              ? displayText || '　'
-              : '苦手な文がまだありません。★ を付けると、ここに集まります。'}
+            {!current ? (
+              '苦手な文がまだありません。★ を付けると、ここに集まります。'
+            ) : settings.reveal === 'shown' ? (
+              // 全文が出ているときだけ、語ごとに辞書を引けるようにする。
+              <WordLinks text={current.text} />
+            ) : (
+              displayText || '　'
+            )}
           </p>
+
+          {current && settings.reveal === 'shown' && (
+            <p className="hint caption-note">単語を押すと辞書が開きます。</p>
+          )}
 
           {player.blocked && (
             <div className="blocked">
