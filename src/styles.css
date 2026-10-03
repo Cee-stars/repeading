@@ -1112,13 +1112,25 @@ kbd {
   }
 }
 
+/* 字幕の上をなぞって語句を選ぶ。縦スクロールは残し、横のなぞりだけこちらで拾う。 */
+.caption-text {
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* 辞書を引ける語。全部が青いリンクだと字幕が読みにくいので、普段は本文のまま。 */
 .caption-text .word {
-  color: inherit;
-  text-decoration: none;
+  cursor: pointer;
   border-radius: 4px;
+  /* 選んでも字が動かないよう、余白は選択の前後で変えない。 */
   padding: 0 1px;
   transition: background 150ms ease, color 150ms ease;
+}
+
+.caption-text .word:focus-visible {
+  outline: 3px solid var(--accent-soft);
+  outline-offset: 1px;
 }
 
 .caption-text .word:hover,
@@ -1165,12 +1177,120 @@ kbd {
   font-size: 15px;
 }
 
+/* 選んでいる範囲。語と語の間も塗って、ひと続きに見せる。 */
+.caption-text .word.selected,
+.caption-text .word-gap.on {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.caption-text .word.selected {
+  border-radius: 0;
+}
+
+.caption-text .word.span-start {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.caption-text .word.span-end {
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+/* 選んだ語句の調べ先。すべて外部サイトへのリンクで、鍵もサーバーも要らない。 */
+.lookup {
+  margin-top: 14px;
+  padding: 14px 16px 15px;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+
+.lookup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lookup-phrase {
+  min-width: 0;
+  font-size: 17px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.lookup-close {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  padding: 6px 8px;
+}
+
+.lookup-close:hover:not(:disabled) {
+  background: var(--fill);
+  border-color: transparent;
+}
+
+.lookup-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* どれが当たるかは語句次第なので、三つとも同じ重みで並べる。 */
+.lookup-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 20px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 200ms ease;
+}
+
+.lookup-link:hover {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.lookup-hint {
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+@media (pointer: coarse) {
+  .lookup-link {
+    min-height: 44px;
+    padding: 0 22px;
+  }
+
+  .lookup-close {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 /* 一度調べた語。字幕を読む邪魔にならない程度の印にとどめる。 */
 .caption-text .word.looked-up {
   text-decoration: underline;
   text-decoration-color: var(--accent);
   text-decoration-thickness: 1.5px;
   text-underline-offset: 4px;
+}
+
+/* 選択中は下地が accent になるので、同じ色の下線だと消える。 */
+.caption-text .word.looked-up.selected {
+  text-decoration-color: var(--accent-fg);
 }
 
 /* --- 調べた単語 --- */

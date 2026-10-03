@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { CaptionWords } from './CaptionWords';
 import { SentenceList } from './SentenceList';
 import {
   mergeWithPrevious,
@@ -7,7 +8,6 @@ import {
   splitPoints,
   splitSentence,
 } from '../lib/edit';
-import { dictionaryUrl, normalizeWord } from '../lib/dictionary';
 import { selectSentences, toggleHardId } from '../lib/material';
 import type { Material } from '../lib/material';
 import { formatPreciseTimestamp } from '../lib/time';
@@ -34,47 +34,6 @@ const SAVE_DEBOUNCE_MS = 600;
 
 /** 区間の端を 1 回でずらす量（秒）。自動字幕のずれはおおむねこの単位で直せる。 */
 const NUDGE = 0.2;
-
-/**
- * 字幕を、語ごとに辞書を引けるようにして描く。
- * 空白はそのまま残して、文の見た目を変えない。
- * 一度調べた語には印が付くので、同じ語で迷っているかどうかが分かる。
- */
-function WordLinks({
-  text,
-  lookedUp,
-  onLookup,
-}: {
-  text: string;
-  lookedUp: Set<string>;
-  onLookup: (word: string, context: string) => void;
-}) {
-  return (
-    <>
-      {text.split(/(\s+)/).map((part, index) => {
-        if (!part.trim()) return part;
-
-        const word = normalizeWord(part);
-        const url = word && dictionaryUrl(word);
-        if (!word || !url) return <span key={index}>{part}</span>;
-
-        return (
-          <a
-            key={index}
-            className={`word ${lookedUp.has(word.toLowerCase()) ? 'looked-up' : ''}`}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            // 辞書を開くついでに記録する。別に覚える操作を増やしたくない。
-            onClick={() => onLookup(word, text)}
-          >
-            {part}
-          </a>
-        );
-      })}
-    </>
-  );
-}
 
 /** 各単語の 1 文字目だけ残す。思い出せないときの手がかり用。 */
 function toHint(text: string): string {
@@ -268,24 +227,18 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
               {isHard ? '★ 苦手' : '☆ 苦手'}
             </button>
           </div>
-          <p className={`caption-text reveal-${settings.reveal}`}>
-            {!current ? (
-              '苦手な文がまだありません。★ を付けると、ここに集まります。'
-            ) : settings.reveal === 'shown' ? (
-              // 全文が出ているときだけ、語ごとに辞書を引けるようにする。
-              <WordLinks
-                text={current.text}
-                lookedUp={lookedUp}
-                onLookup={(word, context) => onLookup(word, context, material.title)}
-              />
-            ) : (
-              displayText || '　'
-            )}
-          </p>
-
-          {current && settings.reveal === 'shown' && (
-            <p className="hint caption-note">
-              単語を押すと辞書が開き、「調べた単語」に残ります。一度調べた単語には下線が付きます。
+          {current && settings.reveal === 'shown' ? (
+            // 全文が出ているときだけ、語句を選んで調べられるようにする。
+            <CaptionWords
+              text={current.text}
+              lookedUp={lookedUp}
+              onLookup={(phrase, context) => onLookup(phrase, context, material.title)}
+            />
+          ) : (
+            <p className={`caption-text reveal-${settings.reveal}`}>
+              {!current
+                ? '苦手な文がまだありません。★ を付けると、ここに集まります。'
+                : displayText || '　'}
             </p>
           )}
 
