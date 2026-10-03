@@ -1082,3 +1082,32 @@ kbd {
   opacity: 0.6;
   font-variant-numeric: tabular-nums;
 }
+
+/* 古いビルドを掴んでいるときの案内。見落とされないよう画面上端に固定する。 */
+.update-banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: -16px -22px 16px;
+  padding: 12px 22px;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 15px;
+  text-align: center;
+}
+
+.update-banner .primary {
+  padding: 7px 18px;
+  font-size: 14px;
+}
+
+@media (pointer: coarse) {
+  .update-banner .primary {
+    min-height: 44px;
+  }
+}

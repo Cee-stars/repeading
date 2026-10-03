@@ -5,12 +5,14 @@ import { PracticeView } from './components/PracticeView';
 import { ThemeToggle } from './components/ThemeToggle';
 import { useLibrary } from './lib/useLibrary';
 import { useTheme } from './lib/useTheme';
+import { reloadFresh, useUpdateCheck } from './lib/useUpdateCheck';
 import type { Material } from './lib/material';
 
 export default function App() {
   const [material, setMaterial] = useState<Material | null>(null);
   const theme = useTheme();
   const library = useLibrary();
+  const stale = useUpdateCheck();
 
   const { save } = library;
 
@@ -36,6 +38,15 @@ export default function App() {
 
   return (
     <>
+      {stale && (
+        <div className="update-banner">
+          <span>新しい版が公開されています。</span>
+          <button type="button" className="primary" onClick={reloadFresh}>
+            読み込み直す
+          </button>
+        </div>
+      )}
+
       <div className="topbar">
         <ThemeToggle {...theme} />
       </div>
