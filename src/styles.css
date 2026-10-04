@@ -1263,13 +1263,30 @@ kbd {
   color: var(--accent-fg);
 }
 
+/* 辞書とは別の行き先なので、外枠だけのピルにして見分けを付ける。 */
+.lookup-copy {
+  padding: 7px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.lookup-copy:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .lookup-hint {
   margin-top: 10px;
   margin-bottom: 0;
 }
 
 @media (pointer: coarse) {
-  .lookup-link {
+  .lookup-link,
+  .lookup-copy {
     min-height: 44px;
     padding: 0 22px;
   }

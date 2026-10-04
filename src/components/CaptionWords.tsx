@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { buildAskPrompt } from '../lib/askPrompt';
+import { copyText } from '../lib/clipboard';
 import { joinWords, lookupsFor, normalizeWord, wordCount } from '../lib/dictionary';
 
 /** なぞって範囲を伸ばせるよう、選択はトークンの位置で持つ。 */
@@ -25,10 +27,18 @@ export function CaptionWords({ text, lookedUp, onLookup }: Props) {
   // 空白も残して分けるので、つなぎ直せば元の見た目に戻る。
   const tokens = useMemo(() => text.split(/(\s+)/), [text]);
   const [range, setRange] = useState<Range | null>(null);
+  const [copied, setCopied] = useState(false);
   const dragging = useRef(false);
 
   // 文が変われば前の文の選択は意味を持たない。
   useEffect(() => setRange(null), [text]);
+
+  // 知らせは残し続けない。
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
 
   // 指を字幕の外で離しても、なぞりは終わらせる。
   useEffect(() => {
@@ -76,6 +86,7 @@ export function CaptionWords({ text, lookedUp, onLookup }: Props) {
           // ブラウザ既定の文字選択と競合させない。
           event.preventDefault();
           dragging.current = true;
+          setCopied(false);
           setRange({ from: index, to: index });
         }}
         onPointerMove={(event) => {
@@ -167,12 +178,30 @@ export function CaptionWords({ text, lookedUp, onLookup }: Props) {
                 {lookup.label}
               </a>
             ))}
+
+            {/* アプリから AI を呼ぶと鍵の置き場所が要るので、呼ぶのは利用者に任せる。 */}
+            <button
+              type="button"
+              className="lookup-copy"
+              title="意味・文法・使い分けを尋ねる文をコピーします。Claude などに貼ってください。"
+              onClick={async () => {
+                const ok = await copyText(
+                  buildAskPrompt([{ word: phrase, context: text }]),
+                );
+                setCopied(ok);
+                if (ok) onLookup(phrase, text);
+              }}
+            >
+              {copied ? '✓ コピーしました' : 'AI に聞く'}
+            </button>
           </div>
 
           <p className="hint lookup-hint">
-            {wordCount(phrase) > 1
-              ? '辞書に項目が無い言い回しは「例文」か「訳」が当たります。'
-              : 'となりの語までなぞると、まとめて調べられます。'}
+            {copied
+              ? 'Claude などに貼ると、意味・文法・使い分けが返ってきます。'
+              : wordCount(phrase) > 1
+                ? '辞書に項目が無い言い回しは「例文」か「訳」が当たります。'
+                : 'となりの語までなぞると、まとめて調べられます。'}
           </p>
         </div>
       )}
