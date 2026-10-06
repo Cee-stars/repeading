@@ -1,0 +1,15 @@
+name = "repeading-sync"
+main = "sync-worker.js"
+compatibility_date = "2026-01-01"
+
+# 同期した中身を置く棚。id は自分の KV 名前空間のものに置き換える。
+#   npx wrangler kv namespace create SYNC
+# が出力した id をそのまま貼る。
+[[kv_namespaces]]
+binding = "SYNC"
+id = "ここに KV 名前空間の id"
+
+[vars]
+# 自分のサイトからだけに絞るなら、ここに公開 URL のオリジンを書く。
+# 空のままなら、どのサイトからでも読み書きできる（鍵を知っていれば、という条件は変わらない）。
+ALLOWED_ORIGIN = "https://cee-stars.github.io"

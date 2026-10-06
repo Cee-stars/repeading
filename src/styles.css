@@ -520,6 +520,108 @@ button.primary:not(.wide) {
   color: var(--warn);
 }
 
+/* --- 端末間の同期 --- */
+
+.sync {
+  margin-top: 48px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+}
+
+.sync-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sync-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+}
+
+.sync-badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--fill);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.sync-badge.sync-ok {
+  background: var(--understand-soft);
+  color: var(--green);
+}
+
+.sync-badge.sync-syncing {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.sync-badge.sync-error {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.sync .hint {
+  max-width: 62ch;
+}
+
+/* 置き場の URL は長くなりがちなので、折り返して全部見せる。 */
+.sync-endpoint {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.sync-form {
+  margin-top: 16px;
+  padding: 18px 20px 20px;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+
+.sync-form label {
+  display: block;
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.sync-form label:first-child {
+  margin-top: 0;
+}
+
+.sync-form input {
+  width: 100%;
+  min-width: 0;
+}
+
+.sync-form .row {
+  margin-top: 0;
+  gap: 10px;
+}
+
+.sync-form .row input {
+  flex: 1;
+}
+
+.sync-form code {
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--fill);
+}
+
 /* --- フレーズ集 --- */
 
 .phrase-set {

@@ -4,12 +4,14 @@ import { Library } from './components/Library';
 import { PhrasePractice } from './components/PhrasePractice';
 import { PhraseSet } from './components/PhraseSet';
 import { PracticeView } from './components/PracticeView';
+import { SyncPanel } from './components/SyncPanel';
 import { ThemeToggle } from './components/ThemeToggle';
 import { WordList } from './components/WordList';
 import { collectPhrases } from './lib/phrases';
 import { useLibrary } from './lib/useLibrary';
 import { useTheme } from './lib/useTheme';
 import { reloadFresh, useUpdateCheck } from './lib/useUpdateCheck';
+import { useSync } from './lib/useSync';
 import { useWords } from './lib/useWords';
 import type { Material } from './lib/material';
 
@@ -32,6 +34,16 @@ export default function App() {
     () => collectPhrases(library.materials, words.words),
     [library.materials, words.words],
   );
+
+  // 置き場と突き合わせて、端末をまたいで同じ状態にする。
+  // 手元の読み込みが終わる前に走らせると、空の状態で押しかねないので ready を見る。
+  const sync = useSync({
+    materials: library.materials,
+    words: words.words,
+    ready: library.status === 'ready',
+    applyMaterials: library.importMaterials,
+    applyWords: words.importWords,
+  });
 
   const { save } = library;
 
@@ -105,6 +117,7 @@ export default function App() {
             remove={words.remove}
             clear={words.clear}
           />
+          <SyncPanel {...sync} />
         </ImportPanel>
       )}
     </>
