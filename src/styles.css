@@ -21,6 +21,7 @@
   --warn: #b25000;
   --warn-soft: #fff6ec;
   --green: #34c759;
+  --understand-soft: #eaf8ee;
   --danger: #d70015;
   --video-bg: #e8e8ed;
   --shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 12px 28px rgba(0, 0, 0, 0.05);
@@ -45,6 +46,7 @@
     --warn: #ff9f0a;
     --warn-soft: #38290f;
     --green: #30d158;
+  --understand-soft: #14301c;
     --danger: #ff453a;
     --video-bg: #2c2c2e;
     --shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -69,6 +71,7 @@
   --warn: #ff9f0a;
   --warn-soft: #38290f;
   --green: #30d158;
+  --understand-soft: #14301c;
   --danger: #ff453a;
   --video-bg: #2c2c2e;
   --shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -476,6 +479,11 @@ button.primary:not(.wide) {
   transition: background 240ms ease;
 }
 
+/* 意味を取る段。ここだけは設定にかかわらず字幕が出る。 */
+.caption.phase-understanding {
+  background: var(--understand-soft);
+}
+
 .caption.phase-mimicking {
   background: var(--warn-soft);
 }
@@ -504,8 +512,105 @@ button.primary:not(.wide) {
   color: var(--accent);
 }
 
+.phase-understanding .phase-label {
+  color: var(--green);
+}
+
 .phase-mimicking .phase-label {
   color: var(--warn);
+}
+
+/* --- フレーズ集 --- */
+
+.phrase-set {
+  margin-top: 48px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+}
+
+.phrase-set h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+}
+
+.phrase-set .hint {
+  max-width: 62ch;
+}
+
+.phrase-set .row {
+  margin: 16px 0;
+}
+
+.phrase-origin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.phrase-tag {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--fill);
+}
+
+.phrase-source {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phrase-list {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.phrase-list li + li {
+  border-top: 1px solid var(--border);
+}
+
+.phrase-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  padding: 12px 18px 13px;
+}
+
+.phrase-row:hover {
+  background: var(--fill);
+  border-color: transparent;
+}
+
+.phrase-row.on {
+  background: var(--accent-soft);
+}
+
+.phrase-text {
+  font-size: 15px;
+}
+
+.phrase-meta {
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .caption-text {

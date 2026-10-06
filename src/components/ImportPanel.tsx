@@ -46,7 +46,7 @@ export function ImportPanel({ onStart, children }: Props) {
     <div className="panel">
       <header className="hero">
         <h1>Repeading</h1>
-        <p>YouTube の字幕を一文ずつ区切って、聞いて、真似る。</p>
+        <p>YouTube の字幕を一文ずつ区切って、聞いて、意味を取って、真似る。</p>
       </header>
 
       <section className="field">

@@ -1,9 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ImportPanel } from './components/ImportPanel';
 import { Library } from './components/Library';
+import { PhrasePractice } from './components/PhrasePractice';
+import { PhraseSet } from './components/PhraseSet';
 import { PracticeView } from './components/PracticeView';
 import { ThemeToggle } from './components/ThemeToggle';
 import { WordList } from './components/WordList';
+import { collectPhrases } from './lib/phrases';
 import { useLibrary } from './lib/useLibrary';
 import { useTheme } from './lib/useTheme';
 import { reloadFresh, useUpdateCheck } from './lib/useUpdateCheck';
@@ -12,6 +15,7 @@ import type { Material } from './lib/material';
 
 export default function App() {
   const [material, setMaterial] = useState<Material | null>(null);
+  const [inPhraseSet, setInPhraseSet] = useState(false);
   const theme = useTheme();
   const library = useLibrary();
   const words = useWords();
@@ -21,6 +25,12 @@ export default function App() {
   const lookedUp = useMemo(
     () => new Set(words.words.map((entry) => entry.word.toLowerCase())),
     [words.words],
+  );
+
+  // つまずいた文を全教材から集めたもの。教材を開かなくても練習できる。
+  const phrases = useMemo(
+    () => collectPhrases(library.materials, words.words),
+    [library.materials, words.words],
   );
 
   const { save } = library;
@@ -60,7 +70,14 @@ export default function App() {
         <ThemeToggle {...theme} />
       </div>
 
-      {material ? (
+      {inPhraseSet ? (
+        <PhrasePractice
+          phrases={phrases}
+          onBack={() => setInPhraseSet(false)}
+          lookedUp={lookedUp}
+          onLookup={words.record}
+        />
+      ) : material ? (
         <PracticeView
           key={material.id}
           material={material}
@@ -81,6 +98,7 @@ export default function App() {
             onImportWords={words.importWords}
             words={words.words}
           />
+          <PhraseSet phrases={phrases} onStart={() => setInPhraseSet(true)} />
           <WordList
             words={words.words}
             available={words.available}

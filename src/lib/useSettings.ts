@@ -13,6 +13,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = { ...DEFAULT_SETTINGS, reveal: 
 
 export const RATES = [0.5, 0.75, 1];
 export const REPEATS = [1, 2, 3];
+export const UNDERSTAND_RATIOS = [0, 0.5, 1, 1.5, 2];
 export const PAUSE_RATIOS = [0, 0.5, 1, 1.5, 2];
 export const REVEAL_ORDER: Reveal[] = ['hidden', 'hint', 'shown'];
 
@@ -29,6 +30,11 @@ function sanitize(raw: unknown): AppSettings {
   return {
     playbackRate: pick(RATES, value.playbackRate, DEFAULT_APP_SETTINGS.playbackRate),
     repeatCount: pick(REPEATS, value.repeatCount, DEFAULT_APP_SETTINGS.repeatCount),
+    understandRatio: pick(
+      UNDERSTAND_RATIOS,
+      value.understandRatio,
+      DEFAULT_APP_SETTINGS.understandRatio,
+    ),
     pauseRatio: pick(PAUSE_RATIOS, value.pauseRatio, DEFAULT_APP_SETTINGS.pauseRatio),
     reveal: pick(REVEAL_ORDER, value.reveal, DEFAULT_APP_SETTINGS.reveal),
     autoAdvance:

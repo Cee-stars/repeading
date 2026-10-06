@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { CaptionWords } from './CaptionWords';
+import { PracticeSettings } from './PracticeSettings';
 import { SentenceList } from './SentenceList';
+import { TransportControls } from './TransportControls';
 import {
   mergeWithPrevious,
   nudgeBoundary,
@@ -13,21 +15,8 @@ import type { Material } from '../lib/material';
 import { formatPreciseTimestamp } from '../lib/time';
 import type { Sentence } from '../lib/types';
 import { usePractice } from '../lib/usePractice';
-import {
-  PAUSE_RATIOS,
-  RATES,
-  REPEATS,
-  REVEAL_ORDER,
-  useSettings,
-} from '../lib/useSettings';
-import type { Reveal } from '../lib/useSettings';
+import { RATES, REVEAL_ORDER, useSettings } from '../lib/useSettings';
 import { useYouTubePlayer } from '../lib/useYouTubePlayer';
-
-const REVEAL_LABELS: Record<Reveal, string> = {
-  hidden: '隠す',
-  hint: 'ヒント',
-  shown: '表示',
-};
 
 /** 進捗を書き込むまでの待ち時間。文を移るたびに保存しにいかないための間引き。 */
 const SAVE_DEBOUNCE_MS = 600;
@@ -209,6 +198,7 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
           <div className="caption-head">
             <div className="phase-label">
               {practice.phase === 'listening' && '聞く'}
+              {practice.phase === 'understanding' && '理解する'}
               {practice.phase === 'mimicking' && '真似る'}
               {practice.phase === 'idle' && (
                 <>
@@ -227,8 +217,9 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
               {isHard ? '★ 苦手' : '☆ 苦手'}
             </button>
           </div>
-          {current && settings.reveal === 'shown' ? (
-            // 全文が出ているときだけ、語句を選んで調べられるようにする。
+          {current && (settings.reveal === 'shown' || practice.phase === 'understanding') ? (
+            // 理解する段では、設定にかかわらず全文を出す。意味を取るための段なので、
+            // ここで隠していては何も起きない。語句もこのときに調べられる。
             <CaptionWords
               text={current.text}
               lookedUp={lookedUp}
@@ -326,99 +317,9 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
         )}
       </div>
 
-      <div className="controls">
-        <button type="button" className="ghost" onClick={practice.prev} title="← 前の文">
-          ◀︎
-        </button>
-        <button type="button" className="primary wide" onClick={practice.toggle} disabled={!current}>
-          {practice.phase === 'listening'
-            ? '停止'
-            : practice.phase === 'mimicking'
-              ? '次へ進む'
-              : '再生'}
-        </button>
-        <button type="button" className="ghost" onClick={practice.replay} title="R もう一度">
-          ↻
-        </button>
-        <button type="button" className="ghost" onClick={practice.next} title="→ 次の文">
-          ▶︎
-        </button>
-      </div>
+      <TransportControls practice={practice} disabled={!current} />
 
-      <div className="settings">
-        <div className="setting">
-          <span className="setting-label">速度</span>
-          <div className="segmented">
-            {RATES.map((rate) => (
-              <button
-                key={rate}
-                type="button"
-                className={settings.playbackRate === rate ? 'on' : ''}
-                onClick={() => update('playbackRate', rate)}
-              >
-                {rate}×
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="setting">
-          <span className="setting-label">繰り返し</span>
-          <div className="segmented">
-            {REPEATS.map((count) => (
-              <button
-                key={count}
-                type="button"
-                className={settings.repeatCount === count ? 'on' : ''}
-                onClick={() => update('repeatCount', count)}
-              >
-                {count}回
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="setting">
-          <span className="setting-label">真似る間</span>
-          <div className="segmented">
-            {PAUSE_RATIOS.map((ratio) => (
-              <button
-                key={ratio}
-                type="button"
-                className={settings.pauseRatio === ratio ? 'on' : ''}
-                onClick={() => update('pauseRatio', ratio)}
-              >
-                {ratio === 0 ? 'なし' : `${ratio}×`}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="setting">
-          <span className="setting-label">字幕</span>
-          <div className="segmented">
-            {REVEAL_ORDER.map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                className={settings.reveal === mode ? 'on' : ''}
-                onClick={() => update('reveal', mode)}
-              >
-                {REVEAL_LABELS[mode]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <label className="setting checkbox">
-          <input
-            type="checkbox"
-            checked={settings.autoAdvance}
-            onChange={(e) => update('autoAdvance', e.target.checked)}
-          />
-          自動で次の文へ
-        </label>
-
+      <PracticeSettings settings={settings} update={update}>
         <label className={`setting checkbox ${hardIds.length ? '' : 'disabled'}`}>
           <input
             type="checkbox"
@@ -429,7 +330,7 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
           苦手な文だけ
           {hardIds.length > 0 && <span className="setting-count">{hardIds.length}</span>}
         </label>
-      </div>
+      </PracticeSettings>
 
       <SentenceList
         sentences={sentences}
