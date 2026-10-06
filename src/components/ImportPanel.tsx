@@ -1,4 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
+import { DifficultyMeter } from './DifficultyMeter';
+import { analyzeDifficulty } from '../lib/difficulty';
 import { buildSentences } from '../lib/segment';
 import { createMaterial, deriveTitle } from '../lib/material';
 import { parseSubtitles } from '../lib/parseSubtitles';
@@ -29,6 +31,12 @@ export function ImportPanel({ onStart, children }: Props) {
   const videoId = useMemo(() => extractVideoId(url), [url]);
   const parsed = useMemo(() => (raw.trim() ? parseSubtitles(raw) : null), [raw]);
   const sentences = useMemo(() => (parsed ? buildSentences(parsed) : []), [parsed]);
+
+  // 字幕を貼った時点で手応えは測れる。始める前に出す。
+  const difficulty = useMemo(
+    () => (parsed?.timed ? analyzeDifficulty(sentences) : null),
+    [parsed, sentences],
+  );
 
   const canStart = Boolean(videoId) && sentences.length > 0 && parsed?.timed;
 
@@ -119,6 +127,8 @@ export function ImportPanel({ onStart, children }: Props) {
               タイムスタンプが見つかりません。区間再生にはタイムスタンプ付きの字幕が必要です。
             </p>
           )}
+
+          {difficulty && <DifficultyMeter difficulty={difficulty} />}
 
           <ol className="preview-list">
             {sentences.slice(0, 5).map((s) => (

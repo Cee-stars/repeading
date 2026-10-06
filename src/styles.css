@@ -327,6 +327,74 @@ textarea.dropping {
   padding-top: 2px;
 }
 
+/* 教材の手応え。始める前に出すので、プレビューの中に置く。 */
+.difficulty {
+  margin: 16px 0 4px;
+  padding: 14px 16px;
+  background: var(--fill);
+  border-radius: 12px;
+}
+
+.difficulty-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.difficulty-label {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.difficulty-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.difficulty-dots .dot {
+  background: var(--border);
+}
+
+.difficulty-dots .dot.on {
+  background: var(--accent);
+}
+
+.difficulty-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin: 12px 0 0;
+}
+
+.difficulty-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.difficulty-stats dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.difficulty-stats dd {
+  margin: 0;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.difficulty-stats .unit {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.difficulty .hint {
+  margin: 12px 0 0;
+  max-width: 54ch;
+}
+
 button.primary:not(.wide) {
   display: block;
   margin: 0 auto;

@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { buildBackup, parseBackup } from '../lib/backup';
+import { analyzeDifficulty } from '../lib/difficulty';
 import { progressRatio, resumeIndex } from '../lib/material';
 import type { Material } from '../lib/material';
 import type { LibraryApi } from '../lib/useLibrary';
@@ -43,6 +44,12 @@ export function Library({
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
 
+  // 並べて見えると、自分がどのあたりを続けられているか分かる。
+  const speeds = useMemo(
+    () => new Map(materials.map((m) => [m.id, analyzeDifficulty(m.sentences)])),
+    [materials],
+  );
+
   if (status === 'loading') return null;
 
   if (status === 'unavailable') {
@@ -84,6 +91,8 @@ export function Library({
                   <span className="library-title">{material.title}</span>
                   <span className="library-meta">
                     {position} / {material.sentences.length} 文
+                    {speeds.get(material.id) &&
+                      ` ・ ${speeds.get(material.id)!.wordsPerMinute} 語/分`}
                     {material.hardIds.length > 0 && ` ・ 苦手 ${material.hardIds.length}`}
                     {` ・ ${formatDate(material.updatedAt)}`}
                   </span>
