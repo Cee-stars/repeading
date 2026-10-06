@@ -1,18 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- 一文を繰り返す、を表す円環の矢印と中央の点。 -->
-  <rect width="512" height="512" fill="#0071e3" />
   <!--
-    中心 (256,256) 半径 120 の円弧。上に隙間を残して時計回りに 320 度。
-    矢じりと干渉しないよう、線の端は丸めずに切り落とす。
+    うさぎ。大きな耳は「まず聞く」から始まる練習に重ねている。
+
+    描き方の決まりごと:
+    - 線は使わず、塗りのシルエット一つで作る。細い線は小さくすると消えるため。
+    - 円で切り落とす。胸から下が切れて塊になり、16px でも輪郭が残る。
+    - 目と口は描き足さず、背景と同じ塗りで抜く。別の色を増やさない。
+    - 背景は淡いが、白い壁紙でも四角の縁が見える程度の濃さにしてある。
+      これより淡いと、明るいホーム画面でうさぎだけが宙に浮いて見える。
+    - うさぎは中央 73% に収まる。Android の maskable 指定で角を丸く削られても欠けない。
   -->
-  <path
-    d="M 297 143 A 120 120 0 1 1 215 143"
-    fill="none"
-    stroke="#ffffff"
-    stroke-width="38"
-    stroke-linecap="butt"
-  />
-  <!-- 弧の終端 (215,143) を底辺の中心に置いた矢じり。 -->
-  <polygon points="258,127 226,173 204,113" fill="#ffffff" />
-  <circle cx="256" cy="256" r="34" fill="#ffffff" />
+  <defs>
+    <linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="40" y1="40" x2="472" y2="472">
+      <stop offset="0" stop-color="#a9d2ff" />
+      <stop offset=".38" stop-color="#cdc2ff" />
+      <stop offset=".7" stop-color="#ffc6de" />
+      <stop offset="1" stop-color="#b4ecc9" />
+    </linearGradient>
+    <clipPath id="frame">
+      <circle cx="256" cy="256" r="188" />
+    </clipPath>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#bg)" />
+
+  <!--
+    繰り返しの印。塗りの三角だけで作り、輪も弧も棒も使わない。
+    左右に開く形は早戻し／早送りに読めて、練習画面の ◀ ▶（前の文・次の文）と同じ意味になる。
+    円の縁で切り落とされるので外側ほど細くなり、うさぎを邪魔しない。
+    32px 以下では消えるが、それでよい。小さいサイズはうさぎの輪郭が背負う。
+  -->
+  <g clip-path="url(#frame)" fill="#ffffff">
+    <polygon points="330,196 424,256 330,316" fill-opacity=".5" />
+    <polygon points="406,196 500,256 406,316" fill-opacity=".8" />
+    <polygon points="182,196 88,256 182,316" fill-opacity=".5" />
+    <polygon points="106,196 12,256 106,316" fill-opacity=".8" />
+  </g>
+
+  <g clip-path="url(#frame)" fill="#14181f">
+    <ellipse cx="208" cy="168" rx="37" ry="92" transform="rotate(-13 208 168)" />
+    <ellipse cx="304" cy="168" rx="37" ry="92" transform="rotate(13 304 168)" />
+    <circle cx="256" cy="302" r="100" />
+    <!-- 胸。円からはみ出させて切り落とす。 -->
+    <ellipse cx="256" cy="492" rx="158" ry="118" />
+  </g>
+
+  <!-- 正面を向いた顔なので、目も左右対称にする。片目だけだと歪んで見える。 -->
+  <circle cx="214" cy="292" r="17" fill="url(#bg)" />
+  <circle cx="298" cy="292" r="17" fill="url(#bg)" />
+  <path d="M 256 344 L 280 322 A 30 30 0 0 0 232 322 Z" fill="url(#bg)" />
 </svg>

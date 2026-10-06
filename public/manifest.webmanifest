@@ -1,7 +1,7 @@
 {
   "name": "Repeading",
   "short_name": "Repeading",
-  "description": "YouTube の字幕を一文ずつ区切って、聞いて、真似る。",
+  "description": "YouTube の字幕を一文ずつ区切って、聞いて、意味を取って、真似る。",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
