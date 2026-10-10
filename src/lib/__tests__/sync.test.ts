@@ -6,7 +6,10 @@ import {
   isSyncPayload,
   mergeWithRemote,
   normalizeEndpoint,
+  parseRepo,
+  reviveSettings,
   signature,
+  validateDraft,
 } from '../sync';
 import { createMaterial } from '../material';
 import type { Material } from '../material';
@@ -55,6 +58,108 @@ describe('normalizeEndpoint', () => {
   it('refuses what is not a URL at all', () => {
     expect(normalizeEndpoint('x.workers.dev')).toBeNull();
     expect(normalizeEndpoint('')).toBeNull();
+  });
+});
+
+describe('parseRepo', () => {
+  it('reads the plain owner/repo form', () => {
+    expect(parseRepo('cee-stars/repeading-sync')).toEqual({
+      owner: 'cee-stars',
+      repo: 'repeading-sync',
+    });
+  });
+
+  it('reads a pasted GitHub URL', () => {
+    // 画面から貼ると URL のことが多い。
+    expect(parseRepo('https://github.com/cee-stars/repeading-sync')).toEqual({
+      owner: 'cee-stars',
+      repo: 'repeading-sync',
+    });
+    expect(parseRepo('https://github.com/cee-stars/repeading-sync.git')).toEqual({
+      owner: 'cee-stars',
+      repo: 'repeading-sync',
+    });
+  });
+
+  it('refuses what is not a repository', () => {
+    expect(parseRepo('repeading')).toBeNull();
+    expect(parseRepo('a/b/c')).toBeNull();
+    expect(parseRepo('')).toBeNull();
+  });
+});
+
+describe('validateDraft', () => {
+  const token = 'github_pat_0123456789abcdef';
+
+  it('accepts a GitHub repository and fills in the default file name', () => {
+    const checked = validateDraft({ kind: 'github', repo: 'me/notes', path: '', token });
+
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    expect(checked.settings).toEqual({
+      kind: 'github',
+      owner: 'me',
+      repo: 'notes',
+      path: 'repeading.json',
+      token,
+    });
+  });
+
+  it('drops a leading slash from the file name', () => {
+    const checked = validateDraft({ kind: 'github', repo: 'me/notes', path: '/data.json', token });
+
+    expect(checked.ok && checked.settings.kind === 'github' && checked.settings.path).toBe('data.json');
+  });
+
+  it('explains what is wrong instead of failing quietly', () => {
+    const bad = validateDraft({ kind: 'github', repo: 'notes', path: '', token });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.error).toContain('owner/repo');
+
+    const short = validateDraft({ kind: 'github', repo: 'me/notes', path: '', token: 'abc' });
+    expect(short.ok).toBe(false);
+    if (!short.ok) expect(short.error).toContain('トークン');
+  });
+
+  it('still accepts the self-hosted shelf', () => {
+    const checked = validateDraft({
+      kind: 'worker',
+      endpoint: 'https://x.workers.dev/',
+      key: 'abcdefghijklmnopqrstuvwxyz',
+    });
+
+    expect(checked.ok && checked.settings).toEqual({
+      kind: 'worker',
+      endpoint: 'https://x.workers.dev',
+      key: 'abcdefghijklmnopqrstuvwxyz',
+    });
+  });
+});
+
+describe('reviveSettings', () => {
+  it('reads back what was saved', () => {
+    const saved = {
+      kind: 'github',
+      owner: 'me',
+      repo: 'notes',
+      path: 'repeading.json',
+      token: 'github_pat_0123456789abcdef',
+    };
+
+    expect(reviveSettings(saved)).toEqual(saved);
+  });
+
+  it('reads a setting saved before there was more than one kind', () => {
+    // 以前は自前の置き場しか無く、kind を持っていなかった。
+    const old = { endpoint: 'https://x.workers.dev', key: 'abcdefghijklmnopqrstuvwxyz' };
+
+    expect(reviveSettings(old)).toEqual({ kind: 'worker', ...old });
+  });
+
+  it('throws away what no longer makes sense', () => {
+    expect(reviveSettings(null)).toBeNull();
+    expect(reviveSettings({ kind: 'github', owner: 'me' })).toBeNull();
+    expect(reviveSettings({ endpoint: 'http://x.dev', key: 'abcdefghijklmnopqrstuvwxyz' })).toBeNull();
   });
 });
 

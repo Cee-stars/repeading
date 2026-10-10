@@ -3,8 +3,10 @@ import type { Material } from './material';
 import {
   buildPayload,
   mergeWithRemote,
-  normalizeEndpoint,
+  reviveSettings,
   signature,
+  validateDraft,
+  type SyncDraft,
   type SyncSettings,
 } from './sync';
 import { fetchRemote, pushRemote, SyncError } from './syncClient';
@@ -23,7 +25,7 @@ export interface SyncApi {
   message: string | null;
   lastSyncedAt: number | null;
   /** 置き場を設定する。受け付けられなければ理由を返す。 */
-  configure: (endpoint: string, key: string) => string | null;
+  configure: (draft: SyncDraft) => string | null;
   disable: () => void;
   syncNow: () => void;
 }
@@ -40,11 +42,7 @@ interface Input {
 function read(): SyncSettings | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
-    const value = JSON.parse(stored) as Partial<SyncSettings>;
-    const endpoint = typeof value.endpoint === 'string' ? normalizeEndpoint(value.endpoint) : null;
-    if (!endpoint || typeof value.key !== 'string' || !value.key) return null;
-    return { endpoint, key: value.key };
+    return stored ? reviveSettings(JSON.parse(stored)) : null;
   } catch {
     return null;
   }
@@ -155,14 +153,11 @@ export function useSync({ materials, words, ready, applyMaterials, applyWords }:
     return () => window.clearTimeout(timer);
   }, [materials, words, settings, ready, run]);
 
-  const configure = useCallback((endpoint: string, key: string): string | null => {
-    const url = normalizeEndpoint(endpoint);
-    if (!url) return '置き場の URL が読み取れません（https で始まる必要があります）。';
+  const configure = useCallback((draft: SyncDraft): string | null => {
+    const checked = validateDraft(draft);
+    if (!checked.ok) return checked.error;
 
-    const trimmed = key.trim();
-    if (trimmed.length < 20) return '同期キーが短すぎます。';
-
-    const next = { endpoint: url, key: trimmed };
+    const next = checked.settings;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
