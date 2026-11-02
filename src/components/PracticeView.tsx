@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CaptionWords } from './CaptionWords';
 import { PracticeSettings } from './PracticeSettings';
 import { SentenceList } from './SentenceList';
@@ -12,6 +12,15 @@ import {
 } from '../lib/edit';
 import { selectSentences, toggleHardId } from '../lib/material';
 import type { Material } from '../lib/material';
+import {
+  forcesCaption,
+  pruneStages,
+  STAGE_HINTS,
+  STAGE_LABELS,
+  STAGE_ORDER,
+  stageOf,
+} from '../lib/stage';
+import type { Stage, StageMap } from '../lib/stage';
 import { formatPreciseTimestamp } from '../lib/time';
 import type { Sentence } from '../lib/types';
 import { usePractice } from '../lib/usePractice';
@@ -43,6 +52,7 @@ interface Props {
 export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }: Props) {
   const { settings, update } = useSettings();
   const [hardIds, setHardIds] = useState(material.hardIds);
+  const [stages, setStages] = useState<StageMap>(material.stages ?? {});
   const [reviewOnly, setReviewOnly] = useState(false);
   const [resumeId, setResumeId] = useState(material.resumeSentenceId);
   const [editing, setEditing] = useState(false);
@@ -53,18 +63,33 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
   );
 
   const player = useYouTubePlayer(material.videoId);
-  const practice = usePractice(sentences, player, settings, resumeId);
+
+  // 段は文ごとに覚えている。同じ文に戻ってきたら、前に登ったところから続ける。
+  const stageFor = useCallback(
+    (sentenceId: number | undefined) => stageOf(stages, sentenceId),
+    [stages],
+  );
+  const practice = usePractice(sentences, player, settings, resumeId, stageFor);
 
   const current = sentences[practice.index];
   const currentId = current?.id;
   const isHard = currentId !== undefined && hardIds.includes(currentId);
+  const stage = stageOf(stages, currentId);
+
+  const setStage = (next: Stage) => {
+    if (currentId === undefined) return;
+    setStages((previous) => ({ ...previous, [currentId]: next }));
+  };
+
+  // 重ねる・ずらす段は、記憶に頼らないことが要点なので字幕を隠せない。
+  const fullCaption = forcesCaption(stage) || settings.reveal === 'shown';
 
   const displayText = useMemo(() => {
     if (!current) return '';
-    if (settings.reveal === 'shown') return current.text;
+    if (fullCaption) return current.text;
     if (settings.reveal === 'hint') return toHint(current.text);
     return '';
-  }, [current, settings.reveal]);
+  }, [current, fullCaption, settings.reveal]);
 
   // 練習中に進んだ位置を、保存する再開位置として持っておく。
   useEffect(() => {
@@ -83,19 +108,34 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
     );
 
   // 保存は最新の値だけ要るので、参照経由で読む。
-  const latest = useRef({ material, hardIds, resumeId, onChange });
-  latest.current = { material, hardIds, resumeId, onChange };
+  const latest = useRef({ material, hardIds, stages, resumeId, onChange });
+  latest.current = { material, hardIds, stages, resumeId, onChange };
 
   const save = (patch: Partial<Material> = {}) => {
-    const { material: base, hardIds: ids, resumeId: id, onChange: commit } = latest.current;
-    commit({ ...base, hardIds: ids, resumeSentenceId: id, ...patch, updatedAt: Date.now() });
+    const {
+      material: base,
+      hardIds: ids,
+      stages: steps,
+      resumeId: id,
+      onChange: commit,
+    } = latest.current;
+    commit({
+      ...base,
+      hardIds: ids,
+      stages: steps,
+      resumeSentenceId: id,
+      ...patch,
+      updatedAt: Date.now(),
+    });
   };
 
   /** 文の並びを編集する。消えた文に付いていた印は落とす。 */
   const applyEdit = (next: Sentence[]) => {
     const kept = pruneHardIds(latest.current.hardIds, next);
+    const keptStages = pruneStages(latest.current.stages, next.map((s) => s.id));
     setHardIds(kept);
-    save({ sentences: next, hardIds: kept });
+    setStages(keptStages);
+    save({ sentences: next, hardIds: kept, stages: keptStages });
   };
 
   const editCurrent = (next: (all: Sentence[], id: number) => Sentence[]) => {
@@ -112,7 +152,7 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
     }
     const timer = window.setTimeout(save, SAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [hardIds, resumeId]);
+  }, [hardIds, stages, resumeId]);
 
   // 間引きの待ち時間中に画面を離れても取りこぼさないよう、離脱時にも書く。
   useEffect(() => () => save(), []);
@@ -135,6 +175,11 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
         s: () =>
           update('playbackRate', RATES[(RATES.indexOf(settings.playbackRate) + 1) % RATES.length]),
       };
+
+      // 1〜4 で段を選ぶ。梯子の下から上の順。
+      STAGE_ORDER.forEach((name, i) => {
+        actions[String(i + 1)] = () => setStage(name);
+      });
 
       const action = actions[event.key] ?? actions[event.key.toLowerCase()];
       if (!action) return;
@@ -167,7 +212,7 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
           </button>
           <span className="counter">
             {sentences.length ? practice.index + 1 : 0} / {sentences.length}
-            {settings.repeatCount > 1 && (
+            {stage === 'repeat' && settings.repeatCount > 1 && (
               <span className="repeat-dots">
                 {Array.from({ length: settings.repeatCount }, (_, i) => (
                   <span key={i} className={i < practice.repeatsDone ? 'dot done' : 'dot'} />
@@ -198,6 +243,9 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
           <div className="caption-head">
             <div className="phase-label">
               {practice.phase === 'listening' && '聞く'}
+              {practice.phase === 'overlapping' && '重ねて言う'}
+              {practice.phase === 'shifting' && '遅らせて言う'}
+              {practice.phase === 'breathing' && '息継ぎ'}
               {practice.phase === 'understanding' && '理解する'}
               {practice.phase === 'mimicking' && '真似る'}
               {practice.phase === 'idle' && (
@@ -217,7 +265,7 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
               {isHard ? '★ 苦手' : '☆ 苦手'}
             </button>
           </div>
-          {current && (settings.reveal === 'shown' || practice.phase === 'understanding') ? (
+          {current && (fullCaption || practice.phase === 'understanding') ? (
             // 理解する段では、設定にかかわらず全文を出す。意味を取るための段なので、
             // ここで隠していては何も起きない。語句もこのときに調べられる。
             <CaptionWords
@@ -317,9 +365,36 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
         )}
       </div>
 
+      {/* 段を選ぶところ。.stage は練習画面そのものの箱なので、こちらは別の名前にしてある。 */}
+      <div className="stage-picker">
+        <div className="stage-picker-row">
+          <span className="setting-label">段</span>
+          <div className="segmented">
+            {STAGE_ORDER.map((name, i) => (
+              <button
+                key={name}
+                type="button"
+                className={stage === name ? 'on' : ''}
+                disabled={!current}
+                onClick={() => setStage(name)}
+                title={`${i + 1} ${STAGE_HINTS[name]}`}
+              >
+                {STAGE_LABELS[name]}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="hint">{STAGE_HINTS[stage]}</p>
+      </div>
+
       <TransportControls practice={practice} disabled={!current} />
 
-      <PracticeSettings settings={settings} update={update}>
+      <PracticeSettings
+        settings={settings}
+        update={update}
+        showGaps={stage === 'repeat'}
+        captionLocked={forcesCaption(stage)}
+      >
         <label className={`setting checkbox ${hardIds.length ? '' : 'disabled'}`}>
           <input
             type="checkbox"
@@ -341,7 +416,8 @@ export function PracticeView({ material, onBack, onChange, lookedUp, onLookup }:
 
       <p className="shortcuts">
         <kbd>Space</kbd> 再生 / 次へ　<kbd>←</kbd><kbd>→</kbd> 文の移動　<kbd>R</kbd> もう一度
-        <kbd>M</kbd> 苦手　<kbd>H</kbd> 字幕　<kbd>S</kbd> 速度　<kbd>Esc</kbd> 停止
+        <kbd>1</kbd>–<kbd>4</kbd> 段　<kbd>M</kbd> 苦手　<kbd>H</kbd> 字幕　<kbd>S</kbd> 速度
+        <kbd>Esc</kbd> 停止
       </p>
     </div>
   );

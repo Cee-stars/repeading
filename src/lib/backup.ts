@@ -1,4 +1,5 @@
 import type { Material } from './material';
+import { isStageMap } from './stage';
 import type { Sentence } from './types';
 import { isWordEntry, type WordEntry } from './words';
 
@@ -43,6 +44,7 @@ export function isMaterial(value: unknown): value is Material {
     m.sentences.every(isSentence) &&
     Array.isArray(m.hardIds) &&
     m.hardIds.every((id) => typeof id === 'number') &&
+    isStageMap(m.stages) &&
     (m.resumeSentenceId === null || typeof m.resumeSentenceId === 'number') &&
     typeof m.createdAt === 'number' &&
     typeof m.updatedAt === 'number'

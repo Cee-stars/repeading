@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS, gapPlan } from '../usePractice';
+import { afterSegment, DEFAULT_SETTINGS, gapPlan } from '../usePractice';
 
 describe('gapPlan', () => {
   it('puts understanding before mimicking', () => {
@@ -46,5 +46,50 @@ describe('gapPlan', () => {
     const gaps = gapPlan(DEFAULT_SETTINGS.understandRatio, DEFAULT_SETTINGS.pauseRatio, 2000);
 
     expect(gaps.map((gap) => gap.phase)).toEqual(['understanding', 'mimicking']);
+  });
+});
+
+describe('afterSegment', () => {
+  it('重ねる段とずらす段は無音の間に落ちない', () => {
+    // ここが崩れると、長い文を記憶で言わせることになり、方法そのものが成立しない。
+    for (const stage of ['listen', 'overlap', 'shift'] as const) {
+      const plan = afterSegment(stage, 1, 1, 4000);
+
+      expect(plan.kind).toBe('loop');
+    }
+  });
+
+  it('間のつまみをどう動かしても、ループする段は間を使わない', () => {
+    // つまみはリピート段のものなので、重ねる段の動きを変えてはいけない。
+    expect(afterSegment('overlap', 2, 2, 4000)).toEqual(afterSegment('overlap', 0, 0, 4000));
+  });
+
+  it('息継ぎを挟んで同じ文をまた鳴らす', () => {
+    const plan = afterSegment('overlap', 1, 1, 4000);
+
+    expect(plan).toEqual({ kind: 'loop', waitMs: 600 });
+  });
+
+  it('リピート段だけが 理解する → 真似る の間を挟む', () => {
+    const plan = afterSegment('repeat', 1, 1, 2000);
+
+    expect(plan).toEqual({
+      kind: 'gaps',
+      gaps: gapPlan(1, 1, 2000),
+    });
+  });
+
+  it('既定のつまみのまま、リピート段は今までどおりに回る', () => {
+    const plan = afterSegment(
+      'repeat',
+      DEFAULT_SETTINGS.understandRatio,
+      DEFAULT_SETTINGS.pauseRatio,
+      2000,
+    );
+
+    expect(plan.kind === 'gaps' && plan.gaps.map((gap) => gap.phase)).toEqual([
+      'understanding',
+      'mimicking',
+    ]);
   });
 });

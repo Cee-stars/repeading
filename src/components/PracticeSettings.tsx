@@ -16,12 +16,28 @@ const REVEAL_LABELS: Record<Reveal, string> = {
 interface Props {
   settings: AppSettings;
   update: SettingsApi['update'];
+  /**
+   * 繰り返し回数と間のつまみを出すか。
+   * 重ねる・ずらす段には無音の間が無く、回数も数えないので、そこでは意味を持たない。
+   */
+  showGaps?: boolean;
+  /**
+   * 字幕を隠せない段かどうか。重ねる・ずらす段は記憶に頼らないことが要点なので、
+   * 隠せる見た目のまま全文が出ていると、設定が効いていないように見えてしまう。
+   */
+  captionLocked?: boolean;
   /** その画面にだけあるつまみ（教材の「苦手な文だけ」など）。 */
   children?: React.ReactNode;
 }
 
 /** 練習のつまみ。動画の教材でもフレーズ集でも同じものを使う。 */
-export function PracticeSettings({ settings, update, children }: Props) {
+export function PracticeSettings({
+  settings,
+  update,
+  showGaps = true,
+  captionLocked = false,
+  children,
+}: Props) {
   return (
     <div className="settings">
       <div className="setting">
@@ -40,78 +56,86 @@ export function PracticeSettings({ settings, update, children }: Props) {
         </div>
       </div>
 
-      <div className="setting">
-        <span className="setting-label">繰り返し</span>
-        <div className="segmented">
-          {REPEATS.map((count) => (
-            <button
-              key={count}
-              type="button"
-              className={settings.repeatCount === count ? 'on' : ''}
-              onClick={() => update('repeatCount', count)}
-            >
-              {count}回
-            </button>
-          ))}
-        </div>
-      </div>
+      {showGaps && (
+        <>
+          <div className="setting">
+            <span className="setting-label">繰り返し</span>
+            <div className="segmented">
+              {REPEATS.map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  className={settings.repeatCount === count ? 'on' : ''}
+                  onClick={() => update('repeatCount', count)}
+                >
+                  {count}回
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="setting">
+            <span className="setting-label">理解する間</span>
+            <div className="segmented">
+              {UNDERSTAND_RATIOS.map((ratio) => (
+                <button
+                  key={ratio}
+                  type="button"
+                  className={settings.understandRatio === ratio ? 'on' : ''}
+                  onClick={() => update('understandRatio', ratio)}
+                >
+                  {ratio === 0 ? 'なし' : `${ratio}×`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="setting">
+            <span className="setting-label">真似る間</span>
+            <div className="segmented">
+              {PAUSE_RATIOS.map((ratio) => (
+                <button
+                  key={ratio}
+                  type="button"
+                  className={settings.pauseRatio === ratio ? 'on' : ''}
+                  onClick={() => update('pauseRatio', ratio)}
+                >
+                  {ratio === 0 ? 'なし' : `${ratio}×`}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="setting">
-        <span className="setting-label">理解する間</span>
-        <div className="segmented">
-          {UNDERSTAND_RATIOS.map((ratio) => (
-            <button
-              key={ratio}
-              type="button"
-              className={settings.understandRatio === ratio ? 'on' : ''}
-              onClick={() => update('understandRatio', ratio)}
-            >
-              {ratio === 0 ? 'なし' : `${ratio}×`}
-            </button>
-          ))}
-        </div>
+        <span className="setting-label">字幕{captionLocked && 'はこの段では常に表示'}</span>
+        {!captionLocked && (
+          <div className="segmented">
+            {REVEAL_ORDER.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={settings.reveal === mode ? 'on' : ''}
+                onClick={() => update('reveal', mode)}
+              >
+                {REVEAL_LABELS[mode]}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="setting">
-        <span className="setting-label">真似る間</span>
-        <div className="segmented">
-          {PAUSE_RATIOS.map((ratio) => (
-            <button
-              key={ratio}
-              type="button"
-              className={settings.pauseRatio === ratio ? 'on' : ''}
-              onClick={() => update('pauseRatio', ratio)}
-            >
-              {ratio === 0 ? 'なし' : `${ratio}×`}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="setting">
-        <span className="setting-label">字幕</span>
-        <div className="segmented">
-          {REVEAL_ORDER.map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              className={settings.reveal === mode ? 'on' : ''}
-              onClick={() => update('reveal', mode)}
-            >
-              {REVEAL_LABELS[mode]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <label className="setting checkbox">
-        <input
-          type="checkbox"
-          checked={settings.autoAdvance}
-          onChange={(e) => update('autoAdvance', e.target.checked)}
-        />
-        自動で次の文へ
-      </label>
+      {showGaps && (
+        <label className="setting checkbox">
+          <input
+            type="checkbox"
+            checked={settings.autoAdvance}
+            onChange={(e) => update('autoAdvance', e.target.checked)}
+          />
+          自動で次の文へ
+        </label>
+      )}
 
       {children}
     </div>

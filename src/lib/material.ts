@@ -1,3 +1,4 @@
+import type { StageMap } from './stage';
 import type { Sentence } from './types';
 
 /** 保存される教材 1 件。 */
@@ -8,6 +9,12 @@ export interface Material {
   sentences: Sentence[];
   /** 苦手として印を付けた文の id。復習モードで使う。 */
   hardIds: number[];
+  /**
+   * 文ごとに、最後にどの段で練習していたか。
+   * 回数は持たない（数えない）。どこまで登ったかだけを覚えておく。
+   * 古い教材には無いので、読むときは `stageOf` を通す。
+   */
+  stages?: StageMap;
   /** 次に開いたとき再開する文の id。 */
   resumeSentenceId: number | null;
   createdAt: number;
@@ -47,6 +54,7 @@ export function createMaterial(
     title: title.trim() || deriveTitle(sentences, videoId),
     sentences,
     hardIds: [],
+    stages: {},
     resumeSentenceId: sentences[0]?.id ?? null,
     createdAt: now,
     updatedAt: now,

@@ -488,6 +488,12 @@ button.primary:not(.wide) {
   background: var(--warn-soft);
 }
 
+/* 重ねる・ずらす段。鳴っているあいだが練習そのものなので、聞く段と色を分ける。 */
+.caption.phase-overlapping,
+.caption.phase-shifting {
+  background: var(--accent-soft);
+}
+
 .phase-label {
   font-size: 12px;
   font-weight: 600;
@@ -518,6 +524,39 @@ button.primary:not(.wide) {
 
 .phase-mimicking .phase-label {
   color: var(--warn);
+}
+
+.phase-overlapping .phase-label,
+.phase-shifting .phase-label {
+  color: var(--accent);
+}
+
+.phase-breathing .phase-label {
+  color: var(--muted);
+}
+
+/*
+ * 段を選ぶところ。練習の中心の操作なので、つまみの箱ではなく再生操作の手前に置く。
+ * （.stage は練習画面そのものの箱。別物。）
+ */
+.stage-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.stage-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.stage-picker .hint {
+  margin: 0;
+  text-align: center;
 }
 
 /* --- 端末間の同期 --- */
